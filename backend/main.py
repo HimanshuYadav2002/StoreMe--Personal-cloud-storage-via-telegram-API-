@@ -30,9 +30,8 @@ async def start_client():
     print("Telegram client started.")
 
 @app.post("/upload")
-async def upload_files(files: List[UploadFile] = File(...)):
+async def upload_files(file: UploadFile):
     
-    for file in files:
         temp_path = f"./{file.filename}"
         with open(temp_path, "wb") as f:
             f.write(await file.read())
@@ -46,4 +45,4 @@ async def upload_files(files: List[UploadFile] = File(...)):
         )
         os.remove(temp_path)
 
-    return
+        return

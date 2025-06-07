@@ -1,12 +1,46 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
+
+function getClientId() {
+  // Simple random client id for demo
+  return (
+    localStorage.getItem("client_id") ||
+    (() => {
+      const id = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("client_id", id);
+      return id;
+    })()
+  );
+}
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState({});
+  const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const wsRef = useRef(null);
+  const clientId = getClientId();
+
+  useEffect(() => {
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${clientId}`);
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setProgress((prev) => ({
+        ...prev,
+        [data.filename]: data.progress,
+      }));
+      if (data.done) {
+        setUploadStatus((prev) => ({
+          ...prev,
+          [data.filename]: "✅ Uploaded",
+        }));
+      }
+    };
+    wsRef.current = ws;
+    return () => ws.close();
+  }, [clientId]);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -16,6 +50,7 @@ function App() {
       statusInit[file.name] = "Pending";
     });
     setUploadStatus(statusInit);
+    setProgress({});
   };
 
   const handleUpload = async () => {
@@ -24,20 +59,16 @@ function App() {
 
     for (const file of selectedFiles) {
       setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
+      setProgress((prev) => ({ ...prev, [file.name]: 0 }));
       const formData = new FormData();
       formData.append("file", file);
 
       try {
-        const response = await axios.post(
-          "http://127.0.0.1:8000/upload",
+        await axios.post(
+          `http://127.0.0.1:8000/upload?client_id=${clientId}`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-        if (response.status === 200) {
-          setUploadStatus((prev) => ({ ...prev, [file.name]: "✅ Uploaded" }));
-        } else {
-          setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
-        }
       } catch {
         setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
       }
@@ -65,10 +96,13 @@ function App() {
         {isUploading ? "Uploading..." : "Upload"}
       </button>
       <div style={{ marginTop: 20 }}>
-        {/* iterating over the upload status object just to keep history of uploaded items before selecting new items  */}
         {Object.keys(uploadStatus).map((fileName) => (
           <div key={fileName} style={{ marginBottom: 10 }}>
-            <strong>{fileName}</strong> — {uploadStatus[fileName]}
+            <strong>{fileName}</strong>
+            {" — "}
+            {uploadStatus[fileName] || "Pending"}{" "}
+            {progress[fileName] !== undefined &&
+              `(${Math.round((progress[fileName] || 0) * 100)}%)`}
           </div>
         ))}
       </div>

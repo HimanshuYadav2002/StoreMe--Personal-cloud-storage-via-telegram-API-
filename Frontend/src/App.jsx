@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
+//function to generate random client id on first use and storing it to browser local storage
+
 function getClientId() {
-  // Simple random client id for demo
   return (
     localStorage.getItem("client_id") ||
     (() => {
@@ -19,43 +20,51 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState({});
   const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+
+  // input ref
   const fileInputRef = useRef(null);
-  const wsRef = useRef(null);
+  // caliing getClient() fucntion
   const clientId = getClientId();
 
-  useEffect(() => {
+  // make a array of all file and set it in selectedFiles and set status of all files to pending...
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(files);
+    files.forEach((file) => {
+      setUploadStatus((prev) => ({
+        ...prev,
+        [file.name]: "Pending",
+      }));
+    });
+  };
+
+  // when upload button get clicked
+
+  // make a websocket request to server and server stores a active socket id in it
+
+  // ws.onmessage() this function listem to all progress message from backend and set progress of current file in Progress which gives us realtime progress of file upload from out server----->telegram server .
+
+  const handleUpload = async () => {
+    // we have made a websocket connection request
+
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${clientId}`);
+
+    // this function listen to every message send
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setProgress((prev) => ({
         ...prev,
         [data.filename]: data.progress,
       }));
-      if (data.done) {
-        setUploadStatus((prev) => ({
-          ...prev,
-          [data.filename]: "✅ Uploaded",
-        }));
-      }
     };
-    wsRef.current = ws;
-    return () => ws.close();
-  }, [clientId]);
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedFiles(files);
-    const statusInit = {};
-    files.forEach((file) => {
-      statusInit[file.name] = "Pending";
-    });
-    setUploadStatus(statusInit);
-    setProgress({});
-  };
+    // is uploading sets to true for disabling upload button
 
-  const handleUpload = async () => {
-    if (isUploading || selectedFiles.length === 0) return;
     setIsUploading(true);
+
+    // iterating over all file objects in selectedFiles and making individual form data and then sending api request to /upload rouete and setting upload status of that file to uploaded when response code === 200
 
     for (const file of selectedFiles) {
       setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
@@ -64,19 +73,31 @@ function App() {
       formData.append("file", file);
 
       try {
-        await axios.post(
-          `http://127.0.0.1:8000/upload?client_id=${clientId}`,
+        let response = await axios.post(
+          `http://127.0.0.1:8000/upload/${clientId}`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
+
+        if (response.status === 200) {
+          setUploadStatus((prev) => ({
+            ...prev,
+            [file.name]: "✅ Uploaded",
+          }));
+        }
       } catch {
         setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
       }
     }
 
+    // setting uploadig to false to enable upload button
     setIsUploading(false);
+    // resettig all selected file after upload
     fileInputRef.current.value = null;
+    // setting selected file to empty array[]
     setSelectedFiles([]);
+    // closing web socket connecting
+    ws.close();
   };
 
   return (

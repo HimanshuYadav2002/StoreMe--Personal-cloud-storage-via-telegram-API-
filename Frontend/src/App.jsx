@@ -23,7 +23,7 @@ function App() {
 
   // input ref
   const fileInputRef = useRef(null);
-  // caliing getClient() fucntion
+  // calling getClient() fucntion
   const clientId = getClientId();
 
   // make a array of all file and set it in selectedFiles and set status of all files to pending...
@@ -45,7 +45,7 @@ function App() {
 
   // ws.onmessage() this function listem to all progress message from backend and set progress of current file in Progress which gives us realtime progress of file upload from out server----->telegram server .
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     // we have made a websocket connection request
 
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${clientId}`);
@@ -65,39 +65,41 @@ function App() {
     setIsUploading(true);
 
     // iterating over all file objects in selectedFiles and making individual form data and then sending api request to /upload rouete and setting upload status of that file to uploaded when response code === 200
+    Promise.all(
+      selectedFiles.map((file) => {
+        setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
+        setProgress((prev) => ({ ...prev, [file.name]: 0 }));
+        const formData = new FormData();
+        formData.append("file", file);
 
-    for (const file of selectedFiles) {
-      setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
-      setProgress((prev) => ({ ...prev, [file.name]: 0 }));
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        let response = await axios.post(
-          `http://127.0.0.1:8000/upload/${clientId}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-
-        if (response.status === 200) {
-          setUploadStatus((prev) => ({
-            ...prev,
-            [file.name]: "✅ Uploaded",
-          }));
-        }
-      } catch {
-        setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
-      }
-    }
-
-    // setting uploadig to false to enable upload button
-    setIsUploading(false);
-    // resettig all selected file after upload
-    fileInputRef.current.value = null;
-    // setting selected file to empty array[]
-    setSelectedFiles([]);
-    // closing web socket connecting
-    ws.close();
+        return axios
+          .post(`http://127.0.0.1:8000/upload/${clientId}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+          .then((res) => {
+            if (res.status === 200) {
+              setUploadStatus((prev) => ({
+                ...prev,
+                [file.name]: "✅ Uploaded",
+              }));
+            } else {
+              setUploadStatus((prev) => ({
+                ...prev,
+                [file.name]: "❌ Failed",
+              }));
+            }
+          });
+      })
+    ).then(() => {
+      // setting uploadig to false to enable upload button
+      setIsUploading(false);
+      // resettig all selected file after upload
+      fileInputRef.current.value = null;
+      // setting selected file to empty array[]
+      setSelectedFiles([]);
+      // closing web socket connecting
+      ws.close();
+    });
   };
 
   return (

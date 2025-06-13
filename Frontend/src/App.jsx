@@ -88,9 +88,15 @@ function App() {
                 [file.name]: "❌ Failed",
               }));
             }
+          })
+          .catch(() => {
+            setUploadStatus((prev) => ({
+              ...prev,
+              [file.name]: "❌ Failed",
+            }));
           });
       })
-    ).then(() => {
+    ).finally(() => {
       // setting uploadig to false to enable upload button
       setIsUploading(false);
       // resettig all selected file after upload

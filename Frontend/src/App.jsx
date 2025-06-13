@@ -84,6 +84,9 @@ function App() {
             ...prev,
             [file.name]: "✅ Uploaded",
           }));
+        } else {
+          console.log(response.status);
+          setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
         }
       } catch {
         setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));

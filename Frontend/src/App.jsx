@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
@@ -20,11 +20,19 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState({});
   const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+  const [thumbnail, setThumbnail] = useState([]);
 
   // input ref
   const fileInputRef = useRef(null);
   // calling getClient() fucntion
   const clientId = getClientId();
+
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:8000/getPhotos")
+      .then((res) => setThumbnail(res.data.photos))
+      .catch((err) => console.error(err));
+  }, [isUploading]);
 
   // make a array of all file and set it in selectedFiles and set status of all files to pending...
 
@@ -109,33 +117,46 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Upload Files to Telegram</h2>
-      <input
-        type="file"
-        multiple
-        onChange={handleFileChange}
-        disabled={isUploading}
-        ref={fileInputRef}
-      />
-      <button
-        onClick={handleUpload}
-        disabled={selectedFiles.length === 0 || isUploading}
-      >
-        {isUploading ? "Uploading..." : "Upload"}
-      </button>
-      <div style={{ marginTop: 20 }}>
-        {Object.keys(uploadStatus).map((fileName) => (
-          <div key={fileName} style={{ marginBottom: 10 }}>
-            <strong>{fileName}</strong>
-            {" — "}
-            {uploadStatus[fileName] || "Pending"}{" "}
-            {progress[fileName] !== undefined &&
-              `(${Math.round((progress[fileName] || 0) * 100)}%)`}
-          </div>
+    <>
+      <div style={{ padding: 20 }}>
+        <h2>Upload Files to Telegram</h2>
+        <input
+          type="file"
+          multiple
+          onChange={handleFileChange}
+          disabled={isUploading}
+          ref={fileInputRef}
+        />
+        <button
+          onClick={handleUpload}
+          disabled={selectedFiles.length === 0 || isUploading}
+        >
+          {isUploading ? "Uploading..." : "Upload"}
+        </button>
+        <div style={{ marginTop: 20 }}>
+          {Object.keys(uploadStatus).map((fileName) => (
+            <div key={fileName} style={{ marginBottom: 10 }}>
+              <strong>{fileName}</strong>
+              {" — "}
+              {uploadStatus[fileName] || "Pending"}{" "}
+              {progress[fileName] !== undefined &&
+                `(${Math.round((progress[fileName] || 0) * 100)}%)`}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        {thumbnail.map((thumb, i) => (
+          <img
+            key={i}
+            src={`data:image/jpeg;base64,${thumb.data}`}
+            alt={thumb.name}
+            width="100"
+            height="100"
+          />
         ))}
       </div>
-    </div>
+    </>
   );
 }
 

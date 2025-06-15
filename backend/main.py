@@ -1,11 +1,13 @@
-import os , asyncio
+import os ,shutil , base64 , asyncio
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from telethon import TelegramClient
 from dotenv import load_dotenv
 from typing import Dict
 
-# loading environment variables 
+
+# loading environment variables
 load_dotenv()
 
 API_ID = int(os.getenv("API_ID"))
@@ -25,25 +27,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# triggerd on startup of server 
+# triggerd on startup of server
+
+
 @app.on_event("startup")
 async def start_client():
     print("Starting Telegram...")
     await client.start()
     print("Telegram client started.")
 
+# triggerd on websocket request from client
+
+
 @app.websocket("/ws/progress/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    # accepting websocket request fron frontend 
+    # accepting websocket request fron frontend
     await websocket.accept()
-    # storing active websocket connection 
+    # storing active websocket connection
     active_connections[client_id] = websocket
     try:
         while True:
             await websocket.receive_text()  # Keep connection alive
-    # removes current web socket object to none on closing of connecton 
+    # removes current web socket object to none on closing of connecton
     except WebSocketDisconnect:
         active_connections.pop(client_id, None)
+
 
 @app.post("/upload/{client_id}")
 async def upload_files(file: UploadFile, client_id: str):
@@ -70,7 +78,7 @@ async def upload_files(file: UploadFile, client_id: str):
 
     # Wrapper function for upload_percentage because its a async function and telethon only accepts sync callbacks functions .
     def sync_upload_percentage(current, total):
-        
+
         loop = asyncio.get_event_loop()
         if loop.is_running():
             asyncio.ensure_future(upload_percentage(current, total))
@@ -86,6 +94,30 @@ async def upload_files(file: UploadFile, client_id: str):
         progress_callback=sync_upload_percentage
     )
 
-    # removes temporary stored file 
+    # removes temporary stored file
     os.remove(temp_path)
-    return 
+    return
+
+# route for getting photos
+
+
+@app.get("/getPhotos")
+async def getPhotos():
+
+    thumb_List = []
+    thumbs = 'thumbnails'
+    os.makedirs(thumbs, exist_ok=True)
+    messages = await client.get_messages("me", limit=50)
+    for message in messages:
+        thumb_List.append(await message.download_media(thumbs, thumb=1))
+
+    photos = []
+    for filename in thumb_List:
+        with open(f"{filename}", "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            photos.append({"name": filename, "data": encoded})
+
+    
+    shutil.rmtree(thumbs) 
+    thumb_List.clear()
+    return JSONResponse(content={"photos": photos})

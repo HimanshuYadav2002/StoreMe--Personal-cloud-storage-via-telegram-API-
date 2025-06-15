@@ -117,9 +117,25 @@ function App() {
   };
 
   return (
-    <>
-      <div style={{ padding: 20 }}>
-        <h2>Upload Files to Telegram</h2>
+    <div className="container">
+      {/* Left - Photo Grid */}
+      <div className="gallery-section">
+        <h2>Uploaded Photos</h2>
+        <div className="grid">
+          {thumbnail.map((thumb, i) => (
+            <img
+              key={i}
+              src={`data:image/jpeg;base64,${thumb.data}`}
+              alt={thumb.name}
+              className="grid-image"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Right - Upload Section */}
+      <div className="upload-section">
+        <h2>Upload Files</h2>
         <input
           type="file"
           multiple
@@ -133,30 +149,29 @@ function App() {
         >
           {isUploading ? "Uploading..." : "Upload"}
         </button>
-        <div style={{ marginTop: 20 }}>
+
+        <div className="status-list">
           {Object.keys(uploadStatus).map((fileName) => (
-            <div key={fileName} style={{ marginBottom: 10 }}>
-              <strong>{fileName}</strong>
-              {" — "}
-              {uploadStatus[fileName] || "Pending"}{" "}
-              {progress[fileName] !== undefined &&
-                `(${Math.round((progress[fileName] || 0) * 100)}%)`}
+            <div key={fileName} className="status-item">
+              <strong>{fileName}</strong> — {uploadStatus[fileName]}{" "}
+              {progress[fileName] !== undefined && (
+                <span>({Math.round((progress[fileName] || 0) * 100)}%)</span>
+              )}
+              {progress[fileName] !== undefined && (
+                <div className="progress-bar">
+                  <div
+                    className="progress"
+                    style={{
+                      width: `${(progress[fileName] || 0) * 100}%`,
+                    }}
+                  ></div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       </div>
-      <div>
-        {thumbnail.map((thumb, i) => (
-          <img
-            key={i}
-            src={`data:image/jpeg;base64,${thumb.data}`}
-            alt={thumb.name}
-            width="100"
-            height="100"
-          />
-        ))}
-      </div>
-    </>
+    </div>
   );
 }
 

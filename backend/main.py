@@ -49,8 +49,33 @@ def validate_phone(phone: str) -> bool:
     except Exception:
         return False
 
-# route to send OTP
+# route to delete client_session object when client_id changes in local storage on frontend
 
+
+@app.post("/removeClient")
+def removeClient(payload: dict = Body(...)):
+    client_id = payload.get("client_id")
+    print(client_id)
+    print(Client_Sessions)
+    Client_Sessions.pop(client_id, None)
+    Client_Phones.pop(client_id, None)
+    print(Client_Sessions)
+    return JSONResponse(status_code=200, content={"message": "client object removed"})
+
+# check for client id in clientSessions on login page and if it exists send 200
+# which redirect client to upload page
+
+
+@app.post("/getClientActiveStatus")
+def getClientActiveStatus(payload: dict = Body(...)):
+    client_id = payload.get("client_id")
+    if client_id in Client_Sessions:
+        return {"message": "client found"}
+    else:
+        return {"message": "client not found"}
+
+
+# route to send OTP
 
 @app.post("/getCode")
 async def get_code(payload: dict = Body(...)):
@@ -74,6 +99,7 @@ async def get_code(payload: dict = Body(...)):
 
 @app.post("/login")
 async def login(payload: dict = Body(...)):
+    print(Client_Sessions)
     client_id = payload.get("client_id")
     verify_code = payload.get("verify_code")
 

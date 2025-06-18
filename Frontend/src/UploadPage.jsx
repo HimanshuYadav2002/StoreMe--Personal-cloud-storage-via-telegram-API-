@@ -20,17 +20,25 @@ function UploadPage() {
   const [client_id, setClient_id] = useState(getClient_id());
   const navigate = useNavigate();
 
-  // checks for client_id changes in every 5 sec
+  // checks for client_id changes in every 1 sec
   useEffect(() => {
     const interval = setInterval(() => {
       const currentId = localStorage.getItem("client_id");
-      setClient_id((prevId) => {
-        if (prevId !== currentId) {
-          localStorage.setItem("client_id", "");
-          navigate("/");
-        }
-        return prevId; // Avoids unnecessary re-renders
-      });
+
+      if (client_id !== currentId) {
+        (async () => {
+          const response = await fetch("http://localhost:8000/removeClient", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ client_id: client_id }),
+          });
+          if (response.ok) {
+            clearInterval(interval);
+            alert("Session Invalid");
+            navigate("/");
+          }
+        })();
+      }
     }, 1000);
 
     return () => clearInterval(interval); // Cleanup

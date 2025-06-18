@@ -9,16 +9,30 @@ function getClient_id() {
 const LoginPage = () => {
   const [phone, setPhone] = useState("");
   const [Otp, setOtp] = useState("");
-  const [client_id, setClient_id] = useState(null);
+  const [client_id, setClient_id] = useState(getClient_id());
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (getClient_id()) {
-      navigate("/upload");
-    }
-  },[]);
+    (async () => {
+      let response = await fetch(
+        "http://localhost:8000/getClientActiveStatus",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id: client_id }),
+        }
+      );
+      const body = await response.json();
+      console.log(body.message);
+      if (body.message === "client found") {
+        navigate("/upload");
+      } else {
+        localStorage.setItem("client_id", "");
+      }
+    })();
+  }, []);
 
   const sendCode = async () => {
     setLoading(true);

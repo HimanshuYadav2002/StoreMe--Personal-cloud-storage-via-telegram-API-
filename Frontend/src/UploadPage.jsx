@@ -17,21 +17,34 @@ function UploadPage() {
   const [thumbnail, setThumbnail] = useState([]);
   // input ref
   const fileInputRef = useRef(null);
-  const client_id = getClient_id();
+  const [client_id, setClient_id] = useState(getClient_id());
   const navigate = useNavigate();
+
+  // checks for client_id changes in every 5 sec
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentId = localStorage.getItem("client_id");
+      setClient_id((prevId) => {
+        if (prevId !== currentId) {
+          localStorage.setItem("client_id", "");
+          navigate("/");
+        }
+        return prevId; // Avoids unnecessary re-renders
+      });
+    }, 1000);
+
+    return () => clearInterval(interval); // Cleanup
+  }, []);
 
   // Check for client_id on mount and when uploading
   useEffect(() => {
-    const client_id = getClient_id();
-    if (!client_id) {
-      navigate("/");
-    } else {
+    if (isUploading === false) {
       axios
         .post("http://127.0.0.1:8000/getPhotos", { client_id: client_id })
         .then((res) => setThumbnail(res.data.photos))
         .catch((err) => console.error(err));
     }
-  }, [isUploading, navigate]);
+  }, [isUploading]);
 
   // make a array of all file and set it in selectedFiles and set status of all files to pending...
 

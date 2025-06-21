@@ -191,7 +191,7 @@ async def get_photos(payload: dict = Body(...)):
     thumb_List = []
     thumbs = 'thumbnails'
     os.makedirs(thumbs, exist_ok=True)
-    messages = await client.get_messages("me", limit=50)
+    messages = await client.get_messages("me", limit=None)
 
     for message in messages:
         thumb_List.append(await message.download_media(thumbs, thumb=1))

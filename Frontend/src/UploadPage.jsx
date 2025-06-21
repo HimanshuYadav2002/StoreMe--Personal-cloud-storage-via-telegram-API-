@@ -178,7 +178,7 @@ function UploadPage() {
     <div className="container">
       {/* Left - Photo Grid */}
       <div className="gallery-section">
-        <h2>Uploaded Photos</h2>
+        <h1>Uploaded Photos</h1>
         <div className="grid">
           {thumbnail.map((thumb, i) => (
             <img

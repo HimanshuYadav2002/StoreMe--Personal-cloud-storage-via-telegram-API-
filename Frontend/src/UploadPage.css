@@ -20,19 +20,19 @@ html,
 /* Left: Gallery section */
 .gallery-section {
     flex: 3;
-    padding: 20px;
     overflow-y: auto;
     border-right: 1px solid #333;
 }
 
-.gallery-section h2 {
-    margin-bottom: 10px;
-    color: #ffffff;
+.gallery-section h1 {
+    text-align: center;
+    color: ghostwhite;
 }
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(10, 100px);
+    justify-content: center;
+    grid-template-columns: repeat(11, 100px);
     gap: 10px;
 }
 
@@ -97,14 +97,15 @@ html,
 
 /* Status list */
 .status-list {
+
     margin-top: 20px;
     font-size: 14px;
 }
 
 .status-item {
+    border: solid grey 1px;
     margin-bottom: 12px;
-    border-bottom: 1px solid #333;
-    padding-bottom: 6px;
+    padding: 6px;
 }
 
 /* Progress bar */

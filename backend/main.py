@@ -199,7 +199,7 @@ async def get_photos(payload: dict = Body(...)):
     photos = []
     for filename in thumb_List:
         if filename:
-            with open(f"{filename}", "rb") as f:
+            with open(filename, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode("utf-8")
                 photos.append(
                     {"name": os.path.basename(filename), "data": encoded})

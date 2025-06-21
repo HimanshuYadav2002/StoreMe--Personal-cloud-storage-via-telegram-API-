@@ -3,28 +3,29 @@ import axios from "axios";
 import "./UploadPage.css";
 import { useNavigate } from "react-router-dom";
 
-//function to get client id from loacl storage
-
+// function to get client id from local storage
 function getClient_id() {
   return localStorage.getItem("client_id");
 }
 
 function UploadPage() {
+  // State variables for file selection, upload status, progress, uploading state, and thumbnails
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState({});
   const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
-  const [thumbnail, setThumbnail] = useState([]);
-  // input ref
+  const [thumbnails, setThumbnails] = useState([]);
+  // Ref for file input
   const fileInputRef = useRef(null);
+  // State for client_id
   const [client_id, setClient_id] = useState(getClient_id());
   const navigate = useNavigate();
 
-  // checks for client_id changes in every 1 sec
+  // Effect: checks for client_id changes every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
       const currentId = localStorage.getItem("client_id");
-
+      // If client_id changes, remove client session and redirect
       if (client_id !== currentId) {
         (async () => {
           const response = await fetch("http://localhost:8000/removeClient", {
@@ -40,22 +41,50 @@ function UploadPage() {
         })();
       }
     }, 1000);
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [client_id, navigate]);
 
-    return () => clearInterval(interval); // Cleanup
-  }, []);
-
-  // Check for client_id on mount and when uploading
+  // Effect: fetches thumbnails via WebSocket when not uploading
   useEffect(() => {
     if (isUploading === false) {
-      axios
-        .post("http://127.0.0.1:8000/getPhotos", { client_id: client_id })
-        .then((res) => setThumbnail(res.data.photos))
-        .catch((err) => console.error(err));
+      setThumbnails([]); // Clear thumbnails before fetching new ones
+      const ws = new WebSocket(`ws://127.0.0.1:8000/streamPhotos/${client_id}`);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.done) {
+          ws.close();
+          return;
+        }
+        if (data.thumbnail) {
+          setThumbnails((prev) => [...prev, data.thumbnail]);
+        }
+      };
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+      };
+      return () => {
+        if (ws.readyState === 1) ws.close(); // Only close if open
+      };
     }
-  }, [isUploading]);
 
-  // make a array of all file and set it in selectedFiles and set status of all files to pending...
+    (async () => {
+      let response = await fetch(
+        "http://localhost:8000/getClientActiveStatus",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id: client_id }),
+        }
+      );
+      const body = await response.json();
+      // console.log(body.message);
+      if (body.message !== "client found") {
+        localStorage.setItem("client_id", "");
+      }
+    })();
+  }, [isUploading, client_id]);
 
+  // Handles file selection and sets initial upload status and progress
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setSelectedFiles(files);
@@ -68,12 +97,7 @@ function UploadPage() {
     });
   };
 
-  // when upload button get clicked
-
-  // make a websocket request to server and server stores a active socket id in it
-
-  // ws.onmessage() this function listem to all progress message from backend and set progress of current file in Progress which gives us realtime progress of file upload from out server----->telegram server .
-
+  // Handles sequential file upload with progress updates
   const handleUpload = async () => {
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${client_id}`);
     ws.onmessage = (event) => {
@@ -104,7 +128,6 @@ function UploadPage() {
             [file.name]: "✅ Uploaded",
           }));
         } else {
-          console.log(response.status);
           setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
         }
       } catch {
@@ -112,16 +135,14 @@ function UploadPage() {
       }
     }
 
-    // setting uploadig to false to enable upload button
+    // Reset upload state and clear file input
     setIsUploading(false);
-    // resettig all selected file after upload
     fileInputRef.current.value = null;
-    // setting selected file to empty array[]
     setSelectedFiles([]);
-    // closing web socket connecting
     ws.close();
   };
 
+  // Handles parallel file upload with progress updates
   const handleParallelUpload = () => {
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${client_id}`);
     ws.onmessage = (event) => {
@@ -180,11 +201,11 @@ function UploadPage() {
       <div className="gallery-section">
         <h1>Uploaded Photos</h1>
         <div className="grid">
-          {thumbnail.map((thumb, i) => (
+          {thumbnails.map((thumbnail, idx) => (
             <img
-              key={i}
-              src={`data:image/jpeg;base64,${thumb.data}`}
-              alt={thumb.name}
+              key={idx}
+              src={`data:image/jpeg;base64,${thumbnail}`}
+              alt="thumbnail"
               className="grid-image"
             />
           ))}
@@ -232,4 +253,5 @@ function UploadPage() {
     </div>
   );
 }
+
 export default UploadPage;

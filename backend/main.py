@@ -1,4 +1,5 @@
 import os
+import io
 import shutil
 import base64
 import asyncio
@@ -181,30 +182,34 @@ async def upload_files(client_id: str = Form(...), file: UploadFile = File(...))
 # route for getting photos
 
 
-@app.post("/getPhotos")
-async def get_photos(payload: dict = Body(...)):
-    client_id = payload.get("client_id")
+@app.websocket("/streamPhotos/{client_id}")
+async def streamPhotos(websocket: WebSocket, client_id: str):
+    await websocket.accept()
+
     client = Client_Sessions.get(client_id)
     if not client or not await client.is_user_authorized():
-        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+        await websocket.send_json({"error": "Unauthorized"})
+        await websocket.close()
+        return
 
-    thumb_List = []
-    thumbs = 'thumbnails'
-    os.makedirs(thumbs, exist_ok=True)
-    messages = await client.get_messages("me", limit=None)
+    try:
+        messages = await client.get_messages("me", limit=None)
+        for message in messages:
+            # Download to memory
+            buffer = io.BytesIO()
+            await client.download_media(message, file=buffer, thumb=1)
+            buffer.seek(0)
 
-    for message in messages:
-        thumb_List.append(await message.download_media(thumbs, thumb=1))
+            # Encode to base64
+            b64_img = base64.b64encode(buffer.read()).decode("utf-8")
 
-    photos = []
-    for filename in thumb_List:
-        if filename:
-            with open(filename, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("utf-8")
-                photos.append(
-                    {"name": os.path.basename(filename), "data": encoded})
+            # Send over WebSocket
+            await websocket.send_json({
+                "message_id": message.id,
+                "thumbnail": b64_img,
+            })
 
-    # removing thumbs folder
-    shutil.rmtree(thumbs)
-    thumb_List.clear()
-    return JSONResponse(content={"photos": photos})
+        await websocket.send_json({"done": True})
+    except Exception as e:
+        await websocket.send_json({"error": str(e)})
+        await websocket.close()

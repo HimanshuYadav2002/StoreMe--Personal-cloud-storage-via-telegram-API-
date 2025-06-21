@@ -64,6 +64,7 @@ function UploadPage() {
         ...prev,
         [file.name]: "Pending",
       }));
+      setProgress((prev) => ({ ...prev, [file.name]: 0 }));
     });
   };
 
@@ -86,7 +87,6 @@ function UploadPage() {
 
     for (const file of selectedFiles) {
       setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
-      setProgress((prev) => ({ ...prev, [file.name]: 0 }));
       const formData = new FormData();
       formData.append("file", file);
       formData.append("client_id", client_id);
@@ -135,7 +135,6 @@ function UploadPage() {
     Promise.all(
       selectedFiles.map((file) => {
         setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
-        setProgress((prev) => ({ ...prev, [file.name]: 0 }));
         const formData = new FormData();
         formData.append("file", file);
         formData.append("client_id", client_id);
@@ -167,6 +166,10 @@ function UploadPage() {
       setIsUploading(false);
       fileInputRef.current.value = null;
       setSelectedFiles([]);
+      setTimeout(() => {
+        setUploadStatus({});
+        setProgress({});
+      }, 2000);
       ws.close();
     });
   };

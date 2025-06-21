@@ -120,65 +120,113 @@ function UploadPage() {
     setSelectedFiles([]);
     // closing web socket connecting
     ws.close();
+
+    const handleParallelUpload = () => {
+      const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${client_id}`);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setProgress((prev) => ({
+          ...prev,
+          [data.filename]: data.progress,
+        }));
+      };
+      setIsUploading(true);
+      Promise.all(
+        selectedFiles.map((file) => {
+          setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
+          setProgress((prev) => ({ ...prev, [file.name]: 0 }));
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("client_id", client_id);
+          return axios
+            .post("http://127.0.0.1:8000/upload", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+            .then((res) => {
+              if (res.status === 200) {
+                setUploadStatus((prev) => ({
+                  ...prev,
+                  [file.name]: "✅ Uploaded",
+                }));
+              } else {
+                setUploadStatus((prev) => ({
+                  ...prev,
+                  [file.name]: "❌ Failed",
+                }));
+              }
+            })
+            .catch(() => {
+              setUploadStatus((prev) => ({
+                ...prev,
+                [file.name]: "❌ Failed",
+              }));
+            });
+        })
+      ).finally(() => {
+        setIsUploading(false);
+        fileInputRef.current.value = null;
+        setSelectedFiles([]);
+        ws.close();
+      });
+    };
+
+    return (
+      <div className="container">
+        {/* Left - Photo Grid */}
+        <div className="gallery-section">
+          <h2>Uploaded Photos</h2>
+          <div className="grid">
+            {thumbnail.map((thumb, i) => (
+              <img
+                key={i}
+                src={`data:image/jpeg;base64,${thumb.data}`}
+                alt={thumb.name}
+                className="grid-image"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Right - Upload Section */}
+        <div className="upload-section">
+          <h2>Upload Files</h2>
+          <input
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            disabled={isUploading}
+            ref={fileInputRef}
+          />
+          <button
+            onClick={handleParallelUpload}
+            disabled={selectedFiles.length === 0 || isUploading}
+          >
+            {isUploading ? "Uploading..." : "Upload"}
+          </button>
+
+          <div className="status-list">
+            {Object.keys(uploadStatus).map((fileName) => (
+              <div key={fileName} className="status-item">
+                <strong>{fileName}</strong> — {uploadStatus[fileName]}{" "}
+                {progress[fileName] !== undefined && (
+                  <span>({Math.round((progress[fileName] || 0) * 100)}%)</span>
+                )}
+                {progress[fileName] !== undefined && (
+                  <div className="progress-bar">
+                    <div
+                      className="progress"
+                      style={{
+                        width: `${(progress[fileName] || 0) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
-
-  return (
-    <div className="container">
-      {/* Left - Photo Grid */}
-      <div className="gallery-section">
-        <h2>Uploaded Photos</h2>
-        <div className="grid">
-          {thumbnail.map((thumb, i) => (
-            <img
-              key={i}
-              src={`data:image/jpeg;base64,${thumb.data}`}
-              alt={thumb.name}
-              className="grid-image"
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Right - Upload Section */}
-      <div className="upload-section">
-        <h2>Upload Files</h2>
-        <input
-          type="file"
-          multiple
-          onChange={handleFileChange}
-          disabled={isUploading}
-          ref={fileInputRef}
-        />
-        <button
-          onClick={handleParallelUpload}
-          disabled={selectedFiles.length === 0 || isUploading}
-        >
-          {isUploading ? "Uploading..." : "Upload"}
-        </button>
-
-        <div className="status-list">
-          {Object.keys(uploadStatus).map((fileName) => (
-            <div key={fileName} className="status-item">
-              <strong>{fileName}</strong> — {uploadStatus[fileName]}{" "}
-              {progress[fileName] !== undefined && (
-                <span>({Math.round((progress[fileName] || 0) * 100)}%)</span>
-              )}
-              {progress[fileName] !== undefined && (
-                <div className="progress-bar">
-                  <div
-                    className="progress"
-                    style={{
-                      width: `${(progress[fileName] || 0) * 100}%`,
-                    }}
-                  ></div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
-
 export default UploadPage;

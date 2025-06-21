@@ -150,7 +150,7 @@ function UploadPage() {
           ref={fileInputRef}
         />
         <button
-          onClick={handleUpload}
+          onClick={handleParallelUpload}
           disabled={selectedFiles.length === 0 || isUploading}
         >
           {isUploading ? "Uploading..." : "Upload"}

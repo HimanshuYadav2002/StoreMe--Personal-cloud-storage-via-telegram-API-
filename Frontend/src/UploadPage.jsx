@@ -73,7 +73,7 @@ function UploadPage() {
 
   // ws.onmessage() this function listem to all progress message from backend and set progress of current file in Progress which gives us realtime progress of file upload from out server----->telegram server .
 
-  const handleUpload = () => {
+  const handleParallelUpload = () => {
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${client_id}`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -150,7 +150,7 @@ function UploadPage() {
           ref={fileInputRef}
         />
         <button
-          onClick={handleUpload}
+          onClick={handleParallelUpload}
           disabled={selectedFiles.length === 0 || isUploading}
         >
           {isUploading ? "Uploading..." : "Upload"}

@@ -24,25 +24,43 @@ function UploadPage() {
   // Effect: checks for client_id changes every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentId = localStorage.getItem("client_id");
       // If client_id changes, remove client session and redirect
+      const currentId = localStorage.getItem("client_id");
       if (client_id !== currentId) {
+        localStorage.setItem("client_id", client_id);
         (async () => {
-          const response = await fetch("http://localhost:8000/removeClient", {
+          localStorage.setItem("client_id", "");
+          await fetch("http://localhost:8000/removeClient", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ client_id: client_id }),
+            body: JSON.stringify({ client_id: currentId }),
           });
-          if (response.ok) {
-            clearInterval(interval);
-            alert("Session Invalid");
-            navigate("/");
-          }
         })();
+        clearInterval(interval);
       }
     }, 1000);
     return () => clearInterval(interval); // Cleanup interval on unmount
   }, [client_id, navigate]);
+
+  useEffect(() => {
+    (async () => {
+      let response = await fetch(
+        "http://localhost:8000/getClientActiveStatus",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id: client_id }),
+        }
+      );
+      const body = await response.json();
+      console.log(body.message);
+      if (body.message !== "client found") {
+        localStorage.setItem("client_id", "");
+        alert("Session Invalid");
+        navigate("/");
+      }
+    })();
+  }, []);
 
   // Effect: fetches thumbnails via WebSocket when not uploading
   useEffect(() => {

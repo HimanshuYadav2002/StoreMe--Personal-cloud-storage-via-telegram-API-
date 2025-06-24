@@ -14,6 +14,28 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Effect: checks for client_id changes every 1 second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentId = localStorage.getItem("client_id");
+      // If client_id changes, remove client session and redirect
+      if (client_id !== currentId) {
+        if (step === 1) {
+          localStorage.setItem("client_id", "");
+          (async () => {
+            await fetch("http://localhost:8000/removeClient", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ client_id: currentId }),
+            });
+          })();
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [client_id, navigate]);
+
   useEffect(() => {
     (async () => {
       let response = await fetch(
@@ -44,8 +66,8 @@ const LoginPage = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setClient_id(data.client_id);
         setStep(2);
+        setClient_id(data.client_id);
       } else {
         alert(data.error || "Failed to send OTP");
       }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./LoginPage.css";
 
 function getClient_id() {
   return localStorage.getItem("client_id");
@@ -102,23 +101,27 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2 className="login-title">🔐 Telegram Login</h2>
+    <div className="flex justify-center items-center min-h-screen bg-gray-900">
+      <div className="bg-gray-800 p-12 rounded-3xl shadow-2xl border border-gray-700 max-w-md w-full">
+        <h2 className="text-3xl font-bold text-center mb-8 text-gray-100">
+          🔐 Telegram Login
+        </h2>
         {step === 1 && (
           <>
-            <label className="login-label">Phone Number</label>
+            <label className="text-lg mb-2 block text-gray-300">
+              Phone Number
+            </label>
             <input
               type="text"
               placeholder="+91XXXXXXXXXX"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="login-input"
+              className="bg-gray-700 text-white border border-gray-600 p-3 text-lg rounded-xl w-full mb-6 focus:outline-none focus:border-blue-500 transition"
             />
             <button
               onClick={sendCode}
               disabled={loading}
-              className="login-button"
+              className="w-full p-3 text-lg font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 transition text-white mb-2"
             >
               {loading ? "Sending..." : "Send OTP"}
             </button>
@@ -126,18 +129,18 @@ const LoginPage = () => {
         )}
         {step === 2 && (
           <>
-            <label className="login-label">OTP Code</label>
+            <label className="text-lg mb-2 block text-gray-300">OTP Code</label>
             <input
               type="text"
               placeholder="Enter OTP"
               value={Otp}
               onChange={(e) => setOtp(e.target.value)}
-              className="login-input"
+              className="bg-gray-700 text-white border border-gray-600 p-3 text-lg rounded-xl w-full mb-6 focus:outline-none focus:border-green-500 transition"
             />
             <button
               onClick={verifyCode}
               disabled={loading}
-              className="login-button verify"
+              className="w-full p-3 text-lg font-semibold rounded-xl bg-green-500 hover:bg-green-600 transition text-white mb-2"
             >
               {loading ? "Verifying..." : "Verify"}
             </button>

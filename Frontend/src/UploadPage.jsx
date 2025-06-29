@@ -32,7 +32,6 @@ function UploadPage() {
       if (client_id !== currentId) {
         localStorage.setItem("client_id", client_id);
         (async () => {
-          localStorage.setItem("client_id", "");
           await fetch(`${HTTP_BASE}/removeClient`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

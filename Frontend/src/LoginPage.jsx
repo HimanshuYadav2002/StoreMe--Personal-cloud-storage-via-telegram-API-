@@ -1,3 +1,6 @@
+// Centralized base addresses
+const HTTP_BASE = "http://localhost:8000";
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -22,7 +25,7 @@ const LoginPage = () => {
         if (step === 1) {
           localStorage.setItem("client_id", "");
           (async () => {
-            await fetch("http://localhost:8000/removeClient", {
+            await fetch(`${HTTP_BASE}/removeClient`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ client_id: currentId }),
@@ -37,14 +40,11 @@ const LoginPage = () => {
 
   useEffect(() => {
     (async () => {
-      let response = await fetch(
-        "http://localhost:8000/getClientActiveStatus",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ client_id: client_id }),
-        }
-      );
+      let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: client_id }),
+      });
       const body = await response.json();
       console.log(body.message);
       if (body.message === "client found") {
@@ -58,7 +58,7 @@ const LoginPage = () => {
   const sendCode = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/getCode", {
+      const response = await fetch(`${HTTP_BASE}/getCode`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
@@ -80,7 +80,7 @@ const LoginPage = () => {
   const verifyCode = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/login", {
+      const response = await fetch(`${HTTP_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ client_id: client_id, verify_code: Otp }),

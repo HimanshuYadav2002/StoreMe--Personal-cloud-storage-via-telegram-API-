@@ -1,3 +1,7 @@
+// Centralized base addresses
+const HTTP_BASE = "http://localhost:8000";
+const WS_BASE = "ws://localhost:8000";
+
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +33,7 @@ function UploadPage() {
         localStorage.setItem("client_id", client_id);
         (async () => {
           localStorage.setItem("client_id", "");
-          await fetch("http://localhost:8000/removeClient", {
+          await fetch(`${HTTP_BASE}/removeClient`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ client_id: currentId }),
@@ -43,14 +47,11 @@ function UploadPage() {
 
   useEffect(() => {
     (async () => {
-      let response = await fetch(
-        "http://localhost:8000/getClientActiveStatus",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ client_id: client_id }),
-        }
-      );
+      let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: client_id }),
+      });
       const body = await response.json();
       if (body.message !== "client found") {
         localStorage.setItem("client_id", "");
@@ -64,7 +65,7 @@ function UploadPage() {
   useEffect(() => {
     if (isUploading === false) {
       setThumbnails([]); // Clear thumbnails before fetching new ones
-      const ws = new WebSocket(`ws://127.0.0.1:8000/streamPhotos/${client_id}`);
+      const ws = new WebSocket(`${WS_BASE}/streamPhotos/${client_id}`);
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.done) {
@@ -84,14 +85,11 @@ function UploadPage() {
     }
 
     (async () => {
-      let response = await fetch(
-        "http://localhost:8000/getClientActiveStatus",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ client_id: client_id }),
-        }
-      );
+      let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: client_id }),
+      });
       const body = await response.json();
       // console.log(body.message);
       if (body.message !== "client found") {
@@ -115,7 +113,7 @@ function UploadPage() {
 
   // Handles sequential file upload with progress updates
   const handleUpload = async () => {
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${client_id}`);
+    const ws = new WebSocket(`${WS_BASE}/ws/progress/${client_id}`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setProgress((prev) => ({
@@ -132,11 +130,9 @@ function UploadPage() {
       formData.append("client_id", client_id);
 
       try {
-        let response = await axios.post(
-          `http://127.0.0.1:8000/upload`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
+        let response = await axios.post(`${HTTP_BASE}/upload`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
         if (response.status === 200) {
           setUploadStatus((prev) => ({
@@ -160,7 +156,7 @@ function UploadPage() {
 
   // Handles parallel file upload with progress updates
   const handleParallelUpload = () => {
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/progress/${client_id}`);
+    const ws = new WebSocket(`${WS_BASE}/ws/progress/${client_id}`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setProgress((prev) => ({
@@ -176,7 +172,7 @@ function UploadPage() {
         formData.append("file", file);
         formData.append("client_id", client_id);
         return axios
-          .post("http://127.0.0.1:8000/upload", formData, {
+          .post(`${HTTP_BASE}/upload`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
           })
           .then((res) => {

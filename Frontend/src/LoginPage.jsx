@@ -20,8 +20,8 @@ const LoginPage = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const currentId = localStorage.getItem("client_id");
-      // If client_id changes, remove client session and redirect
-      if (client_id !== currentId) {
+      // Only attempt to remove client if there is a valid client_id
+      if (client_id !== currentId && currentId) {
         if (step === 1) {
           localStorage.setItem("client_id", "");
           (async () => {

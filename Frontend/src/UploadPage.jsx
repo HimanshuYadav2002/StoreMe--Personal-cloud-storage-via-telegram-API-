@@ -27,8 +27,13 @@ function UploadPage() {
   // Effect: checks for client_id changes every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
+      let currentId;
       // If client_id changes, remove client session and redirect
-      const currentId = localStorage.getItem("client_id");
+      if (localStorage.getItem("client_id") === null) {
+        currentId = "";
+      } else {
+        currentId = localStorage.getItem("client_id");
+      }
       if (client_id !== currentId) {
         localStorage.setItem("client_id", client_id);
         (async () => {

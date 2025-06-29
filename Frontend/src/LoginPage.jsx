@@ -1,5 +1,5 @@
 // Centralized base addresses
-const HTTP_BASE = "http://localhost:8000";
+const HTTP_BASE = "https://storeme-api.onrender.com";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

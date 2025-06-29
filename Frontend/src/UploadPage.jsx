@@ -1,6 +1,6 @@
 // Centralized base addresses
-const HTTP_BASE = "http://localhost:8000";
-const WS_BASE = "ws://localhost:8000";
+const HTTP_BASE = "https://storeme-api.onrender.com";
+const WS_BASE = "wss://storeme-api.onrender.com";
 
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";

@@ -182,8 +182,10 @@ async def upload_files(client_id: str = Form(...), file: UploadFile = File(...))
 # route for getting photos
 
 
-@app.websocket("/streamPhotos/{client_id}")
-async def streamPhotos(websocket: WebSocket, client_id: str):
+@app.websocket("/streamPhotos/{client_id}/{Limit}")
+async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int):
+    if Limit == 0:
+        Limit = None
     await websocket.accept()
 
     client = Client_Sessions.get(client_id)
@@ -193,7 +195,7 @@ async def streamPhotos(websocket: WebSocket, client_id: str):
         return
 
     try:
-        messages = await client.get_messages("me", limit=None)
+        messages = await client.get_messages("me", limit=Limit)
         for message in messages:
             # Download to memory
             buffer = io.BytesIO()

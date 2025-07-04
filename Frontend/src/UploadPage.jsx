@@ -1,6 +1,6 @@
 // Centralized base addresses
-const HTTP_BASE = "https://storeme-api.onrender.com";
-const WS_BASE = "wss://storeme-api.onrender.com";
+const HTTP_BASE = import.meta.env.VITE_HTTP_BASE;
+const WS_BASE = import.meta.env.VITE_WS_BASE;
 
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
@@ -18,6 +18,7 @@ function UploadPage() {
   const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [thumbnails, setThumbnails] = useState([]);
+  const [Limit, setLimit] = useState(0);
   // Ref for file input
   const fileInputRef = useRef(null);
   // State for client_id
@@ -68,8 +69,7 @@ function UploadPage() {
   // Effect: fetches thumbnails via WebSocket when not uploading
   useEffect(() => {
     if (isUploading === false) {
-      setThumbnails([]); // Clear thumbnails before fetching new ones
-      const ws = new WebSocket(`${WS_BASE}/streamPhotos/${client_id}`);
+      const ws = new WebSocket(`${WS_BASE}/streamPhotos/${client_id}/${Limit}`);
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.done) {
@@ -202,6 +202,7 @@ function UploadPage() {
     ).finally(() => {
       setIsUploading(false);
       fileInputRef.current.value = null;
+      setLimit(selectedFiles.length);
       setSelectedFiles([]);
       setTimeout(() => {
         setUploadStatus({});

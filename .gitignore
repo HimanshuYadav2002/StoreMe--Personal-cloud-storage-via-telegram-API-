@@ -1,4 +1,5 @@
 backend/.env
+Frontend/.env
 backend/telegram_session.session
 backend/telegram_session.session-journal
 backend/__pycache__/main.cpython-313.pyc

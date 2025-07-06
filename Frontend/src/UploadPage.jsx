@@ -25,7 +25,7 @@ function UploadPage() {
   const [client_id, setClient_id] = useState(getClient_id());
   const navigate = useNavigate();
 
-  // Effect: checks for client_id changes every 1 second
+  // Effect: checks for change in client_id every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
       let currentId;
@@ -50,6 +50,7 @@ function UploadPage() {
     return () => clearInterval(interval); // Cleanup interval on unmount
   }, [client_id, navigate]);
 
+  // check only one time if client id is valid or not
   useEffect(() => {
     (async () => {
       let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
@@ -113,6 +114,14 @@ function UploadPage() {
       }));
       setProgress((prev) => ({ ...prev, [file.name]: 0 }));
     });
+  };
+
+  // logout handle function
+  const handleLogout = async () => {
+    
+    await axios.post(`${HTTP_BASE}/removeClient`, { client_id: client_id });
+    localStorage.setItem("client_id","");
+    navigate("/");
   };
 
   // Handles sequential file upload with progress updates
@@ -216,9 +225,17 @@ function UploadPage() {
     <div className="flex flex-col md:flex-row h-screen min-h-screen w-full bg-gray-900 text-gray-200 font-sans">
       {/* Left - Photo Grid */}
       <div className=" flex flex-3 flex-col w-full min-h-[400px]">
-        <h1 className="text-center text-2xl font-bold text-gray-100 p-4">
-          Uploaded Photos
-        </h1>
+        <div className="flex justify-between mx-5 my-4">
+          <h1 className="text-center text-2xl font-bold text-gray-100">
+            Uploaded Photos
+          </h1>
+          <button
+            onClick={handleLogout}
+            className="  text-white font-mono rounded-md bg-red-500 px-4 hover:bg-red-600"
+          >
+            Logout
+          </button>
+        </div>
         <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2 overflow-y-auto hide-scrollbar p-5">
           {thumbnails.map((thumbnail, idx) => (
             <img
@@ -232,7 +249,7 @@ function UploadPage() {
       </div>
 
       {/* Right - Upload Section */}
-      <div className="flex flex-1 flex-col px-4 bg-gray-800  min-h-[300px] min-w-[300px]">
+      <div className="flex flex-1 flex-col px-5 bg-gray-800  min-h-[300px] min-w-[300px]">
         <h2 className="mt-4 mb-9 text-2xl font-bold text-white text-center tracking-wide">
           Upload Files
         </h2>

@@ -22,16 +22,15 @@ const LoginPage = () => {
       const currentId = localStorage.getItem("client_id");
       // Only attempt to remove client if there is a valid client_id
       if (client_id !== currentId && currentId) {
-        if (step === 1) {
-          localStorage.setItem("client_id", "");
-          (async () => {
-            await fetch(`${HTTP_BASE}/removeClient`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ client_id: currentId }),
-            });
-          })();
-        }
+        // if (step === 1) {
+        localStorage.setItem("client_id", "");
+        (async () => {
+          await fetch(`${HTTP_BASE}/removeClient`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ client_id: currentId }),
+          });
+        })();
       }
     }, 1000);
 

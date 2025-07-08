@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function getClient_id() {
-  return localStorage.getItem("client_id");
+  return localStorage.getItem("client_id")
+    ? localStorage.getItem("client_id")
+    : "";
 }
 
 const LoginPage = () => {
@@ -19,11 +21,12 @@ const LoginPage = () => {
   // Effect: checks for client_id changes every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentId = localStorage.getItem("client_id");
+      const currentId = getClient_id();
       // Only attempt to remove client if there is a valid client_id
-      if (client_id !== currentId && currentId) {
-        // if (step === 1) {
+      if (client_id !== currentId && currentId !== "") {
+        // if (step !== 3) {
         localStorage.setItem("client_id", "");
+
         (async () => {
           await fetch(`${HTTP_BASE}/removeClient`, {
             method: "POST",
@@ -86,11 +89,14 @@ const LoginPage = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        alert("Login successful!");
         localStorage.setItem("client_id", client_id);
+        alert("Login successful!");
         navigate("/upload");
       } else {
         alert(data.error || "Invalid OTP");
+        console.log(data.detail || "Invalid OTP");
+        setClient_id("");
+        setStep(1);
       }
     } catch (err) {
       alert("Network error");

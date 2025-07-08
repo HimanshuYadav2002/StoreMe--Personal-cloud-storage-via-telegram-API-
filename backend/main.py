@@ -87,7 +87,11 @@ async def get_code(payload: dict = Body(...)):
     client = TelegramClient(session=None, api_id=API_ID, api_hash=API_HASH)
     await client.connect()
 
-    code_request = await client.send_code_request(phone)
+    try:
+        code_request = await client.send_code_request(phone)
+    except errors.FloodWaitError as e:
+        print(f"Flood wait Error wait for {e.seconds//3600} Hours")
+        return JSONResponse(status_code=400, content={"error": f"Flood wait Error wait for {e.seconds//3600} Hours"})
     phone_hash = code_request.phone_code_hash
 
     client_id = str(uuid.uuid4())

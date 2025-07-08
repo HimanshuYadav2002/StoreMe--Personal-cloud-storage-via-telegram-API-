@@ -8,7 +8,9 @@ import { useNavigate } from "react-router-dom";
 
 // function to get client id from local storage
 function getClient_id() {
-  return localStorage.getItem("client_id");
+  return localStorage.getItem("client_id")
+    ? localStorage.getItem("client_id")
+    : "";
 }
 
 function UploadPage() {
@@ -23,18 +25,54 @@ function UploadPage() {
   const fileInputRef = useRef(null);
   // State for client_id
   const [client_id, setClient_id] = useState(getClient_id());
+
   const navigate = useNavigate();
+
+  // Effect: fetches thumbnails via WebSocket when not uploading
+  useEffect(() => {
+    if (isUploading === false) {
+      fetch(`${HTTP_BASE}/getClientActiveStatus`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: client_id }),
+      })
+        .then((response) => response.json())
+        .then((body) => {
+          if (body.message === "client found") {
+            console.log("client Found");
+
+            const ws = new WebSocket(
+              `${WS_BASE}/streamPhotos/${client_id}/${Limit}`
+            );
+            ws.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+              if (data.done) {
+                ws.close();
+                return;
+              }
+              if (data.thumbnail) {
+                setThumbnails((prev) => [...prev, data.thumbnail]);
+              }
+            };
+            ws.onerror = (err) => {
+              console.error("WebSocket error:", err);
+            };
+            return () => {
+              if (ws.readyState === 1) ws.close(); // Only close if open
+            };
+          } else {
+            alert("Session Invalid !!!");
+            navigate("/");
+          }
+        });
+    }
+  }, [isUploading]);
 
   // Effect: checks for change in client_id every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
-      let currentId;
+      let currentId = getClient_id();
       // If client_id changes, remove client session and redirect
-      if (localStorage.getItem("client_id") === null) {
-        currentId = "";
-      } else {
-        currentId = localStorage.getItem("client_id");
-      }
       if (client_id !== currentId) {
         localStorage.setItem("client_id", client_id);
         (async () => {
@@ -44,64 +82,10 @@ function UploadPage() {
             body: JSON.stringify({ client_id: currentId }),
           });
         })();
-        clearInterval(interval);
       }
     }, 1000);
     return () => clearInterval(interval); // Cleanup interval on unmount
-  }, [client_id, navigate]);
-
-  // check only one time if client id is valid or not
-  useEffect(() => {
-    (async () => {
-      let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: client_id }),
-      });
-      const body = await response.json();
-      if (body.message !== "client found") {
-        localStorage.setItem("client_id", "");
-        alert("Session Invalid");
-        navigate("/");
-      }
-    })();
   }, []);
-
-  // Effect: fetches thumbnails via WebSocket when not uploading
-  useEffect(() => {
-    if (isUploading === false) {
-      const ws = new WebSocket(`${WS_BASE}/streamPhotos/${client_id}/${Limit}`);
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.done) {
-          ws.close();
-          return;
-        }
-        if (data.thumbnail) {
-          setThumbnails((prev) => [...prev, data.thumbnail]);
-        }
-      };
-      ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-      };
-      return () => {
-        if (ws.readyState === 1) ws.close(); // Only close if open
-      };
-    }
-
-    (async () => {
-      let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: client_id }),
-      });
-      const body = await response.json();
-      // console.log(body.message);
-      if (body.message !== "client found") {
-        localStorage.setItem("client_id", "");
-      }
-    })();
-  }, [isUploading, client_id]);
 
   // Handles file selection and sets initial upload status and progress
   const handleFileChange = (e) => {
@@ -118,107 +102,133 @@ function UploadPage() {
 
   // logout handle function
   const handleLogout = async () => {
-    
     await axios.post(`${HTTP_BASE}/removeClient`, { client_id: client_id });
-    localStorage.setItem("client_id","");
     navigate("/");
   };
 
   // Handles sequential file upload with progress updates
   const handleUpload = async () => {
-    const ws = new WebSocket(`${WS_BASE}/ws/progress/${client_id}`);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setProgress((prev) => ({
-        ...prev,
-        [data.filename]: data.progress,
-      }));
-    };
     setIsUploading(true);
+    let response = await fetch(`${HTTP_BASE}/getClientActiveStatus`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: client_id }),
+    });
+    let body = await response.json();
+    if (body.message === "client found") {
+      const ws = new WebSocket(`${WS_BASE}/ws/progress/${client_id}`);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setProgress((prev) => ({
+          ...prev,
+          [data.filename]: data.progress,
+        }));
+      };
 
-    for (const file of selectedFiles) {
-      setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("client_id", client_id);
-
-      try {
-        let response = await axios.post(`${HTTP_BASE}/upload`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-
-        if (response.status === 200) {
-          setUploadStatus((prev) => ({
-            ...prev,
-            [file.name]: "Uploaded✅",
-          }));
-        } else {
-          setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
-        }
-      } catch {
-        setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
-      }
-    }
-
-    // Reset upload state and clear file input
-    setIsUploading(false);
-    fileInputRef.current.value = null;
-    setSelectedFiles([]);
-    ws.close();
-  };
-
-  // Handles parallel file upload with progress updates
-  const handleParallelUpload = () => {
-    const ws = new WebSocket(`${WS_BASE}/ws/progress/${client_id}`);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setProgress((prev) => ({
-        ...prev,
-        [data.filename]: data.progress,
-      }));
-    };
-    setIsUploading(true);
-    Promise.all(
-      selectedFiles.map((file) => {
+      for (const file of selectedFiles) {
         setUploadStatus((prev) => ({ ...prev, [file.name]: "Uploading..." }));
         const formData = new FormData();
         formData.append("file", file);
         formData.append("client_id", client_id);
-        return axios
-          .post(`${HTTP_BASE}/upload`, formData, {
+
+        try {
+          let response = await axios.post(`${HTTP_BASE}/upload`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
-          })
-          .then((res) => {
-            if (res.status === 200) {
-              setUploadStatus((prev) => ({
-                ...prev,
-                [file.name]: "Uploaded✅",
-              }));
-            } else {
-              setUploadStatus((prev) => ({
-                ...prev,
-                [file.name]: "❌ Failed",
-              }));
-            }
-          })
-          .catch(() => {
+          });
+
+          if (response.status === 200) {
             setUploadStatus((prev) => ({
               ...prev,
-              [file.name]: "❌ Failed",
+              [file.name]: "Uploaded✅",
             }));
-          });
-      })
-    ).finally(() => {
+          } else {
+            setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
+          }
+        } catch {
+          setUploadStatus((prev) => ({ ...prev, [file.name]: "❌ Failed" }));
+        }
+      }
+
+      // Reset upload state and clear file input
       setIsUploading(false);
       fileInputRef.current.value = null;
-      setLimit(selectedFiles.length);
       setSelectedFiles([]);
-      setTimeout(() => {
-        setUploadStatus({});
-        setProgress({});
-      }, 2000);
       ws.close();
-    });
+    } else {
+      alert("Session Invalid !!!");
+      navigate("/");
+    }
+  };
+
+  // Handles parallel file upload with progress updates
+  const handleParallelUpload = () => {
+    setIsUploading(true);
+    fetch(`${HTTP_BASE}/getClientActiveStatus`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: client_id }),
+    })
+      .then((response) => response.json())
+      .then((body) => {
+        if (body.message === "client found") {
+          const ws = new WebSocket(`${WS_BASE}/ws/progress/${client_id}`);
+          ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setProgress((prev) => ({
+              ...prev,
+              [data.filename]: data.progress,
+            }));
+          };
+
+          Promise.all(
+            selectedFiles.map((file) => {
+              setUploadStatus((prev) => ({
+                ...prev,
+                [file.name]: "Uploading...",
+              }));
+              const formData = new FormData();
+              formData.append("file", file);
+              formData.append("client_id", client_id);
+              return axios
+                .post(`${HTTP_BASE}/upload`, formData, {
+                  headers: { "Content-Type": "multipart/form-data" },
+                })
+                .then((res) => {
+                  if (res.status === 200) {
+                    setUploadStatus((prev) => ({
+                      ...prev,
+                      [file.name]: "Uploaded✅",
+                    }));
+                  } else {
+                    setUploadStatus((prev) => ({
+                      ...prev,
+                      [file.name]: "❌ Failed",
+                    }));
+                  }
+                })
+                .catch(() => {
+                  setUploadStatus((prev) => ({
+                    ...prev,
+                    [file.name]: "❌ Failed",
+                  }));
+                });
+            })
+          ).finally(() => {
+            setIsUploading(false);
+            fileInputRef.current.value = null;
+            setLimit(selectedFiles.length);
+            setSelectedFiles([]);
+            setTimeout(() => {
+              setUploadStatus({});
+              setProgress({});
+            }, 2000);
+            ws.close();
+          });
+        } else {
+          alert("Session Invalid !!!");
+          navigate("/");
+        }
+      });
   };
 
   return (

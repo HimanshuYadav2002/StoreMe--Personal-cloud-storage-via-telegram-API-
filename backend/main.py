@@ -120,7 +120,8 @@ async def login(payload: dict = Body(...)):
     except Exception as e:
         return JSONResponse(status_code=401, content={"error": "Invalid OTP", "detail": str(e)})
 
-    Phone_Hashes[phone] = ""
+    Phone_Hashes.pop(phone, None)
+    Client_Phones.pop(client_id, None)
     return {"message": "Login successful"}
 
 

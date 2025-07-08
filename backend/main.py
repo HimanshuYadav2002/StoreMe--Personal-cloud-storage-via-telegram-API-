@@ -1,5 +1,7 @@
 import os
 import io
+from telethon import errors
+
 import uvicorn
 import base64
 import asyncio

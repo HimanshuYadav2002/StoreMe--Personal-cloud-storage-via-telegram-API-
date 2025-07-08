@@ -1,7 +1,8 @@
 import os
 import io
 from telethon import errors
-
+from telethon.tl.functions.users import GetFullUserRequest
+from telethon.errors import SessionRevokedError, AuthKeyUnregisteredError, RPCError
 import uvicorn
 import base64
 import asyncio
@@ -52,29 +53,55 @@ def validate_phone(phone: str) -> bool:
     except Exception:
         return False
 
-# route to delete client_session object when client_id changes in local storage on frontend
+# route to delete client_session object when client_id changes in local storage on frontend (this method doesnt check if session is valid or not it just rermoves client session bcz of security purpose.(when client id get stolen))
 
 
 @app.post("/removeClient")
-def removeClient(payload: dict = Body(...)):
+async def removeClient(payload: dict = Body(...)):
     client_id = payload.get("client_id")
     print(client_id)
     print(Client_Sessions)
-    Client_Sessions.pop(client_id, None)
-    Client_Phones.pop(client_id, None)
+    client = Client_Sessions.pop(client_id, None)
+    if client:
+        try:
+            await client.log_out()
+        except AuthKeyUnregisteredError:
+            print("Session already terminated remotely.")
+        except RPCError as e:
+            print(f"RPC Error during logout: {e}")
+        await client.disconnect()
+        del client
     print(Client_Sessions)
     return JSONResponse(status_code=200, content={"message": "client object removed"})
 
-# check for client id in clientSessions on login page and if it exists send 200
-# which redirect client to upload page
+
+# function to check if use is currently authenticated or not after he terminated session from telegram app
+async def check_valid_session(client):
+    try:
+        await client(GetFullUserRequest("me"))  # This is a privileged API call
+        return True
+    except (SessionRevokedError, AuthKeyUnregisteredError):
+        return False
+
+# check for client id in clientSessions and if that session is valid or not if both true return client found and if session is not valdi remove it from our client sessions array and terminate that client session (mainly used to terminate session on frontend when session is already terminated by user using telegram phone app)
 
 
 @app.post("/getClientActiveStatus")
-def getClientActiveStatus(payload: dict = Body(...)):
+async def getClientActiveStatus(payload: dict = Body(...)):
     client_id = payload.get("client_id")
-    if client_id in Client_Sessions:
+    if client_id in Client_Sessions and await check_valid_session(Client_Sessions.get(client_id)):
         return {"message": "client found"}
     else:
+        client = Client_Sessions.pop(client_id, None)
+        if client:
+            try:
+                await client.log_out()
+            except AuthKeyUnregisteredError:
+                print("Session already terminated remotely.")
+            except RPCError as e:
+                print(f"RPC Error during logout: {e}")
+            await client.disconnect()
+            del client
         return {"message": "client not found"}
 
 
@@ -92,8 +119,9 @@ async def get_code(payload: dict = Body(...)):
     try:
         code_request = await client.send_code_request(phone)
     except errors.FloodWaitError as e:
-        print(f"Flood wait Error wait for {e.seconds//3600} Hours")
-        return JSONResponse(status_code=400, content={"error": f"Flood wait Error wait for {e.seconds//3600} Hours"})
+        print(
+            f"Flood wait Error wait for {e.seconds//3600} Hours {e.seconds//60} minutes {e.seconds % 60} seconds")
+        return JSONResponse(status_code=400, content={"error": f"Flood wait Error wait for {e.seconds//3600} Hours {e.seconds//60} minutes {e.seconds % 60} seconds"})
     phone_hash = code_request.phone_code_hash
 
     client_id = str(uuid.uuid4())
@@ -114,12 +142,15 @@ async def login(payload: dict = Body(...)):
     phone = Client_Phones.get(client_id)
     phone_hash = Phone_Hashes.get(phone)
 
-    if not client or not phone or not phone_hash:
-        return JSONResponse(status_code=400, content={"error": "Invalid session or expired code"})
-
     try:
         await client.sign_in(phone=phone, code=verify_code, phone_code_hash=phone_hash)
     except Exception as e:
+        Client_Sessions.pop(client_id, None)
+        print(Client_Sessions)
+        await client.disconnect()
+        del client
+        Phone_Hashes.pop(phone, None)
+        Client_Phones.pop(client_id, None)
         return JSONResponse(status_code=401, content={"error": "Invalid OTP", "detail": str(e)})
 
     Phone_Hashes.pop(phone, None)
@@ -191,15 +222,17 @@ async def upload_files(client_id: str = Form(...), file: UploadFile = File(...))
 
 @app.websocket("/streamPhotos/{client_id}/{Limit}")
 async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int):
-    if Limit == 0:
-        Limit = None
-    await websocket.accept()
 
     client = Client_Sessions.get(client_id)
-    if not client or not await client.is_user_authorized():
+    if client and await check_valid_session(client):
+        await websocket.accept()
+    else:
         await websocket.send_json({"error": "Unauthorized"})
         await websocket.close()
         return
+
+    if Limit == 0:
+        Limit = None
 
     try:
         messages = await client.get_messages("me", limit=Limit)

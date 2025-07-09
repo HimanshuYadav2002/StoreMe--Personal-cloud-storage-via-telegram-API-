@@ -24,7 +24,6 @@ const LoginPage = () => {
       const currentId = getClient_id();
       // Only attempt to remove client if there is a valid client_id
       if (client_id !== currentId && currentId !== "") {
-        // if (step !== 3) {
         localStorage.setItem("client_id", "");
 
         (async () => {
@@ -38,7 +37,7 @@ const LoginPage = () => {
     }, 1000);
 
     return () => clearInterval(interval); // Cleanup interval on unmount
-  }, [client_id, navigate]);
+  }, [client_id]);
 
   useEffect(() => {
     (async () => {
@@ -52,6 +51,7 @@ const LoginPage = () => {
       if (body.message === "client found") {
         navigate("/upload");
       } else {
+        setClient_id("");
         localStorage.setItem("client_id", "");
       }
     })();
@@ -69,6 +69,7 @@ const LoginPage = () => {
       if (response.ok) {
         setStep(2);
         setClient_id(data.client_id);
+        localStorage.setItem("client_id", data.client_id);
       } else {
         alert(data.error || "Failed to send OTP");
       }
@@ -89,7 +90,6 @@ const LoginPage = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem("client_id", client_id);
         alert("Login successful!");
         navigate("/upload");
       } else {

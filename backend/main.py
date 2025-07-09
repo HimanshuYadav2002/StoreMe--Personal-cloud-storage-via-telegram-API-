@@ -120,8 +120,8 @@ async def get_code(payload: dict = Body(...)):
         code_request = await client.send_code_request(phone)
     except errors.FloodWaitError as e:
         print(
-            f"Flood wait Error wait for {e.seconds//3600} Hours {e.seconds//60} minutes {e.seconds % 60} seconds")
-        return JSONResponse(status_code=400, content={"error": f"Flood wait Error wait for {e.seconds//3600} Hours {e.seconds//60} minutes {e.seconds % 60} seconds"})
+            f"Flood wait Error wait for {e.seconds//3600} Hours {(e.seconds % 3600)//60} minutes {(e.seconds % 3600) % 60} seconds")
+        return JSONResponse(status_code=400, content={"error": f"Flood wait Error wait for {e.seconds//3600} Hours {(e.seconds % 3600)//60} minutes {(e.seconds % 3600) % 60} seconds"})
     phone_hash = code_request.phone_code_hash
 
     client_id = str(uuid.uuid4())

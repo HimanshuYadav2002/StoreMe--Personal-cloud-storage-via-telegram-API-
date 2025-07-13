@@ -240,8 +240,9 @@ function UploadPage() {
             Uploaded Photos
           </h1>
           <button
+            disabled={isUploading}
             onClick={handleLogout}
-            className="  text-white font-mono rounded-md bg-red-500 px-4 hover:bg-red-600"
+            className={`text-white font-mono rounded-md px-4 ${isUploading?"cursor-not-allowed bg-red-700":" bg-red-500  hover:bg-red-600"}`}
           >
             Logout
           </button>

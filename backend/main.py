@@ -220,8 +220,8 @@ async def upload_files(client_id: str = Form(...), file: UploadFile = File(...))
 # route for getting photos
 
 
-@app.websocket("/streamPhotos/{client_id}/{Limit}")
-async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int):
+@app.websocket("/streamPhotos/{client_id}/{Limit}/{isInitialStreaming}")
+async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int, isInitialStreaming: bool):
 
     client = Client_Sessions.get(client_id)
     if client and await check_valid_session(client):
@@ -235,7 +235,7 @@ async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int):
         Limit = None
 
     try:
-        messages = await client.get_messages("me", limit=Limit)
+        messages = await client.get_messages("me", limit=Limit, reverse=isInitialStreaming)
         for message in messages:
             # Download to memory
             buffer = io.BytesIO()

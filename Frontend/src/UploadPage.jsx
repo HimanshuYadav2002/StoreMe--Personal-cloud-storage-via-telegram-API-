@@ -21,6 +21,7 @@ function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [thumbnails, setThumbnails] = useState([]);
   const [Limit, setLimit] = useState(0);
+  const [isIntialPhotoStreaming , setIsInitialPhotoStreaming] = useState(true);
   // Ref for file input
   const fileInputRef = useRef(null);
   // State for client_id
@@ -42,12 +43,13 @@ function UploadPage() {
             console.log("client Found");
 
             const ws = new WebSocket(
-              `${WS_BASE}/streamPhotos/${client_id}/${Limit}`
+              `${WS_BASE}/streamPhotos/${client_id}/${Limit}/${isIntialPhotoStreaming}`
             );
             ws.onmessage = (event) => {
               const data = JSON.parse(event.data);
               if (data.done) {
                 ws.close();
+                setIsInitialPhotoStreaming(false);
                 return;
               }
               if (data.thumbnail) {
@@ -58,7 +60,8 @@ function UploadPage() {
               console.error("WebSocket error:", err);
             };
             return () => {
-              if (ws.readyState === 1) ws.close(); // Only close if open
+              if (ws.readyState === 1) ws.close();
+               // Only close if open
             };
           } else {
             alert("Session Invalid !!!");

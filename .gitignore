@@ -1,4 +1,6 @@
 backend/.env
+backend/*.session
+backend/*.session-journal
 Frontend/.env
 backend/telegram_session.session
 backend/telegram_session.session-journal

@@ -89,6 +89,21 @@ async def check_valid_session(client):
 @app.post("/getClientActiveStatus")
 async def getClientActiveStatus(payload: dict = Body(...)):
     client_id = payload.get("client_id")
+
+    if os.path.isfile(f"{client_id}.session") and client_id not in Client_Sessions:
+        client = TelegramClient(
+            session=f"{client_id}.session", api_id=API_ID, api_hash=API_HASH)
+        await client.connect()
+        if await client.is_user_authorized():
+            await client.start()
+            Client_Sessions[client_id] = client
+        else:
+            print("Session is invalid. Deleting session file")
+            await client.disconnect()
+            del client
+            os.remove(f"{client_id}.session")
+            return {"message": "client not found"}
+
     if client_id in Client_Sessions and await check_valid_session(Client_Sessions.get(client_id)):
         return {"message": "client found"}
     else:
@@ -116,7 +131,8 @@ async def get_code(payload: dict = Body(...)):
 
     try:
         client_id = str(uuid.uuid4())
-        client = TelegramClient(session=None, api_id=API_ID, api_hash=API_HASH)
+        client = TelegramClient(
+            session=client_id, api_id=API_ID, api_hash=API_HASH)
         await client.connect()
         code_request = await client.send_code_request(phone)
         phone_hash = code_request.phone_code_hash

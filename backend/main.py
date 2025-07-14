@@ -110,26 +110,24 @@ async def getClientActiveStatus(payload: dict = Body(...)):
 @app.post("/getCode")
 async def get_code(payload: dict = Body(...)):
     phone = payload.get("phone")
+    print(phone)
     if not phone or not validate_phone(phone):
         return JSONResponse(status_code=400, content={"error": "Invalid phone number"})
 
-    client = TelegramClient(session=None, api_id=API_ID, api_hash=API_HASH)
-    await client.connect()
-
     try:
+        client_id = str(uuid.uuid4())
+        client = TelegramClient(session=None, api_id=API_ID, api_hash=API_HASH)
+        await client.connect()
         code_request = await client.send_code_request(phone)
+        phone_hash = code_request.phone_code_hash
+        Client_Sessions[client_id] = client
+        Client_Phones[client_id] = phone
+        Phone_Hashes[phone] = phone_hash
+        return {"client_id": client_id, "message": "OTP sent"}
     except errors.FloodWaitError as e:
         print(
             f"Flood wait Error wait for {e.seconds//3600} Hours {(e.seconds % 3600)//60} minutes {(e.seconds % 3600) % 60} seconds")
         return JSONResponse(status_code=400, content={"error": f"Flood wait Error wait for {e.seconds//3600} Hours {(e.seconds % 3600)//60} minutes {(e.seconds % 3600) % 60} seconds"})
-    phone_hash = code_request.phone_code_hash
-
-    client_id = str(uuid.uuid4())
-    Client_Sessions[client_id] = client
-    Client_Phones[client_id] = phone
-    Phone_Hashes[phone] = phone_hash
-
-    return {"client_id": client_id, "message": "OTP sent"}
 
 
 @app.post("/login")

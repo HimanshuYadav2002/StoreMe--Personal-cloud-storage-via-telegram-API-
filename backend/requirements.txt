@@ -4,3 +4,4 @@ python-dotenv
 telethon
 phonenumbers
 python-multipart
+cryptg

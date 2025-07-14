@@ -19,7 +19,7 @@ function UploadPage() {
   const [uploadStatus, setUploadStatus] = useState({});
   const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
-  const [thumbnails, setThumbnails] = useState([]);
+  const [thumbnailsData, setThumbnailsData] = useState([]);
   const [Limit, setLimit] = useState(0);
   const [isIntialPhotoStreaming , setIsInitialPhotoStreaming] = useState(true);
   // Ref for file input
@@ -52,8 +52,8 @@ function UploadPage() {
                 setIsInitialPhotoStreaming(false);
                 return;
               }
-              if (data.thumbnail) {
-                setThumbnails((prev) => [...prev, data.thumbnail]);
+              if (data) {
+                setThumbnailsData((prev) => [...prev, data]);
               }
             };
             ws.onerror = (err) => {
@@ -251,10 +251,11 @@ function UploadPage() {
           </button>
         </div>
         <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2 overflow-y-auto hide-scrollbar p-5">
-          {thumbnails.map((thumbnail, idx) => (
+          {thumbnailsData.map((thumbnailData, idx) => (
             <img
+              onClick={()=>{handleThumbnailClick(thumbnailData.message_id)}}
               key={idx}
-              src={`data:image/jpeg;base64,${thumbnail}`}
+              src={`data:image/jpeg;base64,${thumbnailData.thumbnail}`}
               alt="thumbnail"
               className="w-full h-full aspect-square object-cover rounded-md border-2 border-cyan-600 hover:border-4 shadow-xl hover:scale-140  transition-transform duration-200"
             />

@@ -22,12 +22,17 @@ function UploadPage() {
   const [thumbnailsData, setThumbnailsData] = useState([]);
   const [Limit, setLimit] = useState(0);
   const [isIntialPhotoStreaming , setIsInitialPhotoStreaming] = useState(true);
+  const [isThumbnailClicked, setIsThumbnailClicked] = useState(false);
   // Ref for file input
   const fileInputRef = useRef(null);
   // State for client_id
   const [client_id, setClient_id] = useState(getClient_id());
 
   const navigate = useNavigate();
+
+  // variable for handleThumbnailclick function
+  const [OriginalImageUrl, setOriginalImageUrl] = useState("");
+  const OriginalImageChunks = useRef([]);
 
   // Effect: fetches thumbnails via WebSocket when not uploading
   useEffect(() => {
@@ -61,7 +66,7 @@ function UploadPage() {
             };
             return () => {
               if (ws.readyState === 1) ws.close();
-               // Only close if open
+              // Only close if open
             };
           } else {
             alert("Session Invalid !!!");
@@ -234,6 +239,37 @@ function UploadPage() {
       });
   };
 
+  const handleThumbnailClick = (message_id) => {
+    setIsThumbnailClicked(true);
+    const ws = new WebSocket(
+      `${WS_BASE}/getFullSizePhoto/${client_id}/${message_id}`
+    );
+    ws.binaryType = "arraybuffer";
+
+    ws.onmessage = (event) => {
+      // Collect chunk
+      OriginalImageChunks.current.push(new Uint8Array(event.data));
+
+      const blob = new Blob(OriginalImageChunks.current, {
+        type: "image/jpeg",
+      });
+      const objectUrl = URL.createObjectURL(blob);
+
+      setOriginalImageUrl((oldUrl) => {
+        if (oldUrl) URL.revokeObjectURL(oldUrl);
+        return objectUrl;
+      });
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket closed");
+    };
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-screen min-h-screen w-full bg-gray-900 text-gray-200 font-sans">
       {/* Left - Photo Grid */}
@@ -250,16 +286,33 @@ function UploadPage() {
             Logout
           </button>
         </div>
-        <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2 overflow-y-auto hide-scrollbar p-5">
-          {thumbnailsData.map((thumbnailData, idx) => (
-            <img
+
+        <div className="relative h-full overflow-y-auto hide-scrollbar">
+          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2  p-5">
+            {thumbnailsData.map((thumbnailData, idx) => (
+              <img
               onClick={()=>{handleThumbnailClick(thumbnailData.message_id)}}
-              key={idx}
-              src={`data:image/jpeg;base64,${thumbnailData.thumbnail}`}
-              alt="thumbnail"
-              className="w-full h-full aspect-square object-cover rounded-md border-2 border-cyan-600 hover:border-4 shadow-xl hover:scale-140  transition-transform duration-200"
-            />
-          ))}
+                key={idx}
+                src={`data:image/jpeg;base64,${thumbnailData.thumbnail}`}
+                alt="thumbnail"
+                className="w-full h-full aspect-square object-cover rounded-md border-2 border-cyan-600 hover:border-4 shadow-xl hover:scale-140  transition-transform duration-200"
+              />
+            ))}
+          </div>
+
+          {isThumbnailClicked && (
+            <div
+              onClick={() => {
+                setIsThumbnailClicked((prev) => !prev);
+                if (OriginalImageUrl) URL.revokeObjectURL(OriginalImageUrl);
+                setOriginalImageUrl("");
+                OriginalImageChunks.current = [];
+              }}
+              className="fixed top-0 h-full w-full backdrop-blur-xl flex justify-center"
+            >
+              <img src={OriginalImageUrl} className="aspect-auto" />
+            </div>
+          )}
         </div>
       </div>
 

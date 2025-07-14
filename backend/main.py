@@ -271,5 +271,17 @@ async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int, isIniti
         await websocket.close()
 
 
+@app.websocket("/getFullSizePhoto/{client_id}/{message_id}")
+async def getFullSizePhoto(websocket: WebSocket, client_id: str, message_id: int):
+    await websocket.accept()
+
+    client = Client_Sessions[client_id]
+    msg = await client.get_messages("me", ids=message_id)
+
+    async for chunk in client.iter_download(msg.document, chunk_size=64 * 1024):
+        await websocket.send_bytes(chunk)
+
+    return await websocket.close()
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=10000, reload=True)

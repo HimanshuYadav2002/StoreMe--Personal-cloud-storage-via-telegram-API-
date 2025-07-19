@@ -15,24 +15,25 @@ function getClient_id() {
 
 function UploadPage() {
   // State variables for file selection, upload status, progress, uploading state, and thumbnails
+  const [client_id, setClient_id] = useState(getClient_id());
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState({});
   const [progress, setProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [thumbnailsData, setThumbnailsData] = useState([]);
   const [Limit, setLimit] = useState(0);
-  const [isIntialPhotoStreaming , setIsInitialPhotoStreaming] = useState(true);
-  const [isThumbnailClicked, setIsThumbnailClicked] = useState(false);
+  const [isIntialPhotoStreaming, setIsInitialPhotoStreaming] = useState(true);
+  const [SelectedImageData, setSelectedImageData] = useState();
+  const [PreviousImageData, setPreviousImageData] = useState();
+  const [NextImageData, setNextImageData] = useState();
   // Ref for file input
   const fileInputRef = useRef(null);
-  // State for client_id
-  const [client_id, setClient_id] = useState(getClient_id());
-
   const navigate = useNavigate();
 
   // variable for handleThumbnailclick function
-  const [OriginalImageUrl, setOriginalImageUrl] = useState("");
+  const [OriginalImageUrl, setOriginalImageUrl] = useState(null);
   const OriginalImageChunks = useRef([]);
+  const PreviousNextImageWebsocket = useRef();
 
   // Effect: fetches thumbnails via WebSocket when not uploading
   useEffect(() => {
@@ -239,35 +240,95 @@ function UploadPage() {
       });
   };
 
-  const handleThumbnailClick = (message_id) => {
-    setIsThumbnailClicked(true);
-    const ws = new WebSocket(
-      `${WS_BASE}/getFullSizePhoto/${client_id}/${message_id}`
-    );
-    ws.binaryType = "arraybuffer";
+  // helper function to get next and previous message id of current selected image
+  function getPrevAndNextImageId(arr, conditionFn) {
+    const index = arr.findIndex(conditionFn);
 
-    ws.onmessage = (event) => {
-      // Collect chunk
-      OriginalImageChunks.current.push(new Uint8Array(event.data));
+    if (index === -1) {
+      return { prev: null, next: null }; // No match found
+    }
 
-      const blob = new Blob(OriginalImageChunks.current, {
-        type: "image/jpeg",
-      });
-      const objectUrl = URL.createObjectURL(blob);
+    const prev = index > 0 ? arr[index - 1] : null;
+    const next = index < arr.length - 1 ? arr[index + 1] : null;
 
-      setOriginalImageUrl((oldUrl) => {
-        if (oldUrl) URL.revokeObjectURL(oldUrl);
-        return objectUrl;
-      });
+    return { prev, next };
+  }
+
+  // handle load currently selected image and previous and next image data
+  useEffect(() => {
+    if (SelectedImageData) {
+      setPreviousImageData(
+        getPrevAndNextImageId(
+          thumbnailsData,
+          (thumbnailData) =>
+            thumbnailData.message_id === SelectedImageData.message_id
+        ).prev
+      );
+      setNextImageData(
+        getPrevAndNextImageId(
+          thumbnailsData,
+          (thumbnailData) =>
+            thumbnailData.message_id === SelectedImageData.message_id
+        ).next
+      );
+      const ws = new WebSocket(
+        `${WS_BASE}/getFullSizePhoto/${client_id}/${SelectedImageData.message_id}`
+      );
+      PreviousNextImageWebsocket.current = ws;
+      ws.binaryType = "arraybuffer";
+
+      ws.onmessage = (event) => {
+        // Collect chunk
+        OriginalImageChunks.current.push(new Uint8Array(event.data));
+
+        const blob = new Blob(OriginalImageChunks.current, {
+          type: "image/jpeg",
+        });
+        const objectUrl = URL.createObjectURL(blob);
+
+        setOriginalImageUrl((oldUrl) => {
+          if (oldUrl) URL.revokeObjectURL(oldUrl);
+          return objectUrl;
+        });
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket closed");
+      };
+    }
+    return () => {
+      URL.revokeObjectURL(OriginalImageUrl);
+      setOriginalImageUrl(null);
+      OriginalImageChunks.current = [];
+      setPreviousImageData();
+      setNextImageData();
     };
+  }, [SelectedImageData]);
 
-    ws.onerror = (err) => {
-      console.error("WebSocket error:", err);
-    };
+  const handleThumbnailClick = (thumbnailData) => {
+    setSelectedImageData(thumbnailData);
+  };
 
-    ws.onclose = () => {
-      console.log("WebSocket closed");
-    };
+  const PreviousButtonClick = () => {
+    PreviousNextImageWebsocket.current.close();
+    setSelectedImageData(PreviousImageData);
+  };
+  const NextButtonClick = () => {
+    PreviousNextImageWebsocket.current.close();
+    setSelectedImageData(NextImageData);
+  };
+
+  const CloseFullImageView = () => {
+    setNextImageData();
+    setPreviousImageData();
+    if (OriginalImageUrl) URL.revokeObjectURL(OriginalImageUrl);
+    setOriginalImageUrl(null);
+    OriginalImageChunks.current = [];
+    setSelectedImageData();
   };
 
   return (
@@ -281,7 +342,11 @@ function UploadPage() {
           <button
             disabled={isUploading}
             onClick={handleLogout}
-            className={`text-white font-mono rounded-md px-4 ${isUploading?"cursor-not-allowed bg-red-700":" bg-red-500  hover:bg-red-600"}`}
+            className={`text-white font-mono rounded-md px-4 ${
+              isUploading
+                ? "cursor-not-allowed bg-red-700"
+                : " bg-red-500  hover:bg-red-600"
+            }`}
           >
             Logout
           </button>
@@ -291,7 +356,9 @@ function UploadPage() {
           <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2  p-5">
             {thumbnailsData.map((thumbnailData, idx) => (
               <img
-              onClick={()=>{handleThumbnailClick(thumbnailData.message_id)}}
+                onClick={() => {
+                  handleThumbnailClick(thumbnailData);
+                }}
                 key={idx}
                 src={`data:image/jpeg;base64,${thumbnailData.thumbnail}`}
                 alt="thumbnail"
@@ -300,17 +367,29 @@ function UploadPage() {
             ))}
           </div>
 
-          {isThumbnailClicked && (
-            <div
-              onClick={() => {
-                setIsThumbnailClicked((prev) => !prev);
-                if (OriginalImageUrl) URL.revokeObjectURL(OriginalImageUrl);
-                setOriginalImageUrl("");
-                OriginalImageChunks.current = [];
-              }}
-              className="fixed top-0 h-full w-full backdrop-blur-xl flex justify-center"
-            >
-              <img src={OriginalImageUrl} className="aspect-auto" />
+          {SelectedImageData && (
+            <div className="fixed top-0 h-full w-full backdrop-blur-xl flex justify-between px-10">
+              <button
+                disabled={!PreviousImageData}
+                onClick={PreviousButtonClick}
+                className="rounded-xl bg-black opacity-20 text-4xl font-extrabold p-3 self-center"
+              >
+                {"<-"}
+              </button>
+              {OriginalImageUrl && (
+                <img
+                  src={OriginalImageUrl}
+                  alt="Original Image"
+                  className="aspect-auto"
+                />
+              )}
+              <button
+                disabled={!NextImageData}
+                onClick={NextButtonClick}
+                className="rounded-xl bg-black opacity-20 text-4xl font-extrabold p-3 self-center"
+              >
+                {"->"}
+              </button>
             </div>
           )}
         </div>

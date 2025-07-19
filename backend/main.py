@@ -278,8 +278,12 @@ async def getFullSizePhoto(websocket: WebSocket, client_id: str, message_id: int
     client = Client_Sessions[client_id]
     msg = await client.get_messages("me", ids=message_id)
 
-    async for chunk in client.iter_download(msg.document, chunk_size=64 * 1024):
-        await websocket.send_bytes(chunk)
+    try:
+        async for chunk in client.iter_download(msg.document, chunk_size=64 * 1024):
+            await websocket.send_bytes(chunk)
+    except WebSocketDisconnect:
+        print("disconnected abruptly")
+        return
 
     return await websocket.close()
 

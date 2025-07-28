@@ -250,6 +250,10 @@ async def streamPhotos(websocket: WebSocket, client_id: str, Limit: int, isIniti
 
     try:
         messages = await client.get_messages("me", limit=Limit, reverse=isInitialStreaming)
+
+        if isInitialStreaming == False:
+            messages.reverse()
+
         for message in messages:
             # Download to memory
             buffer = io.BytesIO()

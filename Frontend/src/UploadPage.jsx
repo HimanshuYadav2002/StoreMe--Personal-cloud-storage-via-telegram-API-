@@ -35,6 +35,8 @@ function UploadPage() {
   const OriginalImageChunks = useRef([]);
   const PreviousNextImageWebsocket = useRef();
 
+  const [loaded, setLoaded] = useState(false);
+
   // Effect: fetches thumbnails via WebSocket when not uploading
   useEffect(() => {
     if (isUploading === false) {
@@ -256,6 +258,7 @@ function UploadPage() {
 
   // handle load currently selected image and previous and next image data
   useEffect(() => {
+    setOriginalImageUrl();
     if (SelectedImageData) {
       setPreviousImageData(
         getPrevAndNextImageId(
@@ -280,16 +283,6 @@ function UploadPage() {
       ws.onmessage = (event) => {
         // Collect chunk
         OriginalImageChunks.current.push(new Uint8Array(event.data));
-
-        const blob = new Blob(OriginalImageChunks.current, {
-          type: "image/jpeg",
-        });
-        const objectUrl = URL.createObjectURL(blob);
-
-        setOriginalImageUrl((oldUrl) => {
-          if (oldUrl) URL.revokeObjectURL(oldUrl);
-          return objectUrl;
-        });
       };
 
       ws.onerror = (err) => {
@@ -297,6 +290,11 @@ function UploadPage() {
       };
 
       ws.onclose = () => {
+        const blob = new Blob(OriginalImageChunks.current, {
+          type: "image/jpeg",
+        });
+        const objectUrl = URL.createObjectURL(blob);
+        setOriginalImageUrl(objectUrl);
         console.log("WebSocket closed");
       };
     }
@@ -306,6 +304,7 @@ function UploadPage() {
       OriginalImageChunks.current = [];
       setPreviousImageData();
       setNextImageData();
+      setLoaded(false);
     };
   }, [SelectedImageData]);
 
@@ -329,6 +328,7 @@ function UploadPage() {
     setOriginalImageUrl(null);
     OriginalImageChunks.current = [];
     setSelectedImageData();
+    setLoaded(false);
   };
 
   return (
@@ -454,13 +454,23 @@ function UploadPage() {
                     />
                   </svg>
                 </button>
-                {OriginalImageUrl && (
+
+                <div className="relative overflow-hidden w-full h-full">
+                  <img
+                    src={`data:image/jpeg;base64,${SelectedImageData.thumbnail}`}
+                    alt={"Blurry image"}
+                    className="absolute inset-0 w-full h-full aspect-auto object-contain filter blur-xs transition-opacity duration-300"
+                    style={{ opacity: loaded ? 0 : 1 }}
+                  />
+
                   <img
                     src={OriginalImageUrl}
-                    alt="Original Image"
-                    className="aspect-auto"
+                    alt={"Original image"}
+                    onLoad={() => setLoaded(true)}
+                    className="absolute inset-0 w-full h-full aspect-auto object-contain transition-opacity duration-700"
+                    style={{ opacity: loaded ? 1 : 0 }}
                   />
-                )}
+                </div>
                 <button
                   disabled={!NextImageData}
                   onClick={NextButtonClick}

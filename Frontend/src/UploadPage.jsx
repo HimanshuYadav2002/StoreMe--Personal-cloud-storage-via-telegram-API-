@@ -390,7 +390,7 @@ function UploadPage() {
                   </svg>
                 </button>
                 <div className="flex gap-5 p-2">
-                  <button>
+                  <a href={OriginalImageUrl} download={true}>
                     <svg
                       className="w-7 h-7 text-gray-800 dark:text-white"
                       aria-hidden="true"
@@ -408,7 +408,7 @@ function UploadPage() {
                         d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4"
                       />
                     </svg>
-                  </button>
+                  </a>
                   <button>
                     <svg
                       className="w-7 h-7 text-gray-800 dark:text-white"

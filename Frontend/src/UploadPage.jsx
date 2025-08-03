@@ -368,28 +368,123 @@ function UploadPage() {
           </div>
 
           {SelectedImageData && (
-            <div className="fixed top-0 h-full w-full backdrop-blur-xl flex justify-between px-10">
-              <button
-                disabled={!PreviousImageData}
-                onClick={PreviousButtonClick}
-                className="rounded-xl bg-black opacity-20 text-4xl font-extrabold p-3 self-center"
-              >
-                {"<-"}
-              </button>
-              {OriginalImageUrl && (
-                <img
-                  src={OriginalImageUrl}
-                  alt="Original Image"
-                  className="aspect-auto"
-                />
-              )}
-              <button
-                disabled={!NextImageData}
-                onClick={NextButtonClick}
-                className="rounded-xl bg-black opacity-20 text-4xl font-extrabold p-3 self-center"
-              >
-                {"->"}
-              </button>
+            <div className="flex fixed top-0 h-full w-full backdrop-blur-xl">
+              <div className="flex justify-between fixed top-0 w-full px-4 py-2 ">
+                <button onClick={CloseFullImageView}>
+                  <svg
+                    className="w-10 h-10 text-gray-800 dark:text-white"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 12h14M5 12l4-4m-4 4 4 4"
+                    />
+                  </svg>
+                </button>
+                <div className="flex gap-5 p-2">
+                  <button>
+                    <svg
+                      className="w-7 h-7 text-gray-800 dark:text-white"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4"
+                      />
+                    </svg>
+                  </button>
+                  <button>
+                    <svg
+                      className="w-7 h-7 text-gray-800 dark:text-white"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="flex w-full h-full justify-between">
+                <button
+                  disabled={!PreviousImageData}
+                  onClick={PreviousButtonClick}
+                  className="px-12"
+                >
+                  <svg
+                    className="w-10 h-10 text-gray-800 dark:text-white"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="m15 19-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                {OriginalImageUrl && (
+                  <img
+                    src={OriginalImageUrl}
+                    alt="Original Image"
+                    className="aspect-auto"
+                  />
+                )}
+                <button
+                  disabled={!NextImageData}
+                  onClick={NextButtonClick}
+                  className="px-12"
+                >
+                  <svg
+                    className="w-10 h-10 text-gray-800 dark:text-white"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="m9 5 7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </div>

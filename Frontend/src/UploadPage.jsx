@@ -5,6 +5,7 @@ const WS_BASE = import.meta.env.VITE_WS_BASE;
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useSwipeable } from "react-swipeable";
 
 // function to get client id from local storage
 function getClient_id() {
@@ -321,6 +322,11 @@ function UploadPage() {
     setSelectedImageData(NextImageData);
   };
 
+  const SwipeHandler = useSwipeable({
+    onSwipedLeft: NextButtonClick,
+    onSwipedRight: PreviousButtonClick,
+  });
+
   const CloseFullImageView = () => {
     setNextImageData();
     setPreviousImageData();
@@ -434,7 +440,6 @@ function UploadPage() {
                 <button
                   disabled={!PreviousImageData}
                   onClick={PreviousButtonClick}
-                  className="px-12"
                 >
                   <svg
                     className="w-10 h-10 text-gray-800 dark:text-white"
@@ -455,7 +460,10 @@ function UploadPage() {
                   </svg>
                 </button>
 
-                <div className="relative overflow-hidden w-full h-full">
+                <div
+                  {...SwipeHandler}
+                  className="relative overflow-hidden w-full h-full"
+                >
                   <img
                     src={`data:image/jpeg;base64,${SelectedImageData.thumbnail}`}
                     alt={"Blurry image"}
@@ -471,11 +479,7 @@ function UploadPage() {
                     style={{ opacity: loaded ? 1 : 0 }}
                   />
                 </div>
-                <button
-                  disabled={!NextImageData}
-                  onClick={NextButtonClick}
-                  className="px-12"
-                >
+                <button disabled={!NextImageData} onClick={NextButtonClick}>
                   <svg
                     className="w-10 h-10 text-gray-800 dark:text-white"
                     aria-hidden="true"

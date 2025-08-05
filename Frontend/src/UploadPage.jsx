@@ -338,230 +338,245 @@ function UploadPage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen min-h-screen w-full bg-gray-900 text-gray-200 font-sans">
-      {/* Left - Photo Grid */}
-      <div className=" flex flex-3 flex-col w-full min-h-[400px]">
-        <div className="flex justify-between mx-5 my-4">
-          <h1 className="text-center text-2xl font-bold text-gray-100">
-            Uploaded Photos
-          </h1>
-          <button
-            disabled={isUploading}
-            onClick={handleLogout}
-            className={`text-white font-mono rounded-md px-4 ${
-              isUploading
-                ? "cursor-not-allowed bg-red-700"
-                : " bg-red-500  hover:bg-red-600"
-            }`}
-          >
-            Logout
-          </button>
-        </div>
+    <>
+      {/* Grid and Uplaod section */}
 
-        <div className="relative h-full overflow-y-auto hide-scrollbar">
-          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2  p-5">
-            {thumbnailsData.map((thumbnailData, idx) => (
-              <img
-                onClick={() => {
-                  handleThumbnailClick(thumbnailData);
-                }}
-                key={idx}
-                src={`data:image/jpeg;base64,${thumbnailData.thumbnail}`}
-                alt="thumbnail"
-                className="w-full h-full aspect-square object-cover rounded-md border-2 border-cyan-600 hover:border-4 shadow-xl hover:scale-140  transition-transform duration-200"
-              />
-            ))}
+      <div className="flex flex-col md:flex-row h-screen min-h-screen w-full bg-gray-900 text-gray-200 font-sans">
+        {/* Left - Photo Grid */}
+        <div className=" flex flex-3 flex-col w-full min-h-[400px]">
+          <div className="flex justify-between mx-5 my-4">
+            <h1 className="text-center text-2xl font-bold text-gray-100">
+              Uploaded Photos
+            </h1>
+            <button
+              disabled={isUploading}
+              onClick={handleLogout}
+              className={`text-white font-mono rounded-md px-4 ${
+                isUploading
+                  ? "cursor-not-allowed bg-red-700"
+                  : " bg-red-500  hover:bg-red-600"
+              }`}
+            >
+              Logout
+            </button>
           </div>
 
-          {SelectedImageData && (
-            <div className="flex fixed top-0 h-full w-full backdrop-blur-xl">
-              <div className="flex justify-between fixed top-0 w-full px-4 py-2 ">
-                <button onClick={CloseFullImageView}>
-                  <svg
-                    className="w-10 h-10 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M5 12h14M5 12l4-4m-4 4 4 4"
-                    />
-                  </svg>
-                </button>
-                <div className="flex gap-5 p-2">
-                  <a href={OriginalImageUrl} download={true}>
-                    <svg
-                      className="w-7 h-7 text-gray-800 dark:text-white"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4"
-                      />
-                    </svg>
-                  </a>
-                  <button>
-                    <svg
-                      className="w-7 h-7 text-gray-800 dark:text-white"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div className="flex w-full h-full justify-between">
-                <button
-                  disabled={!PreviousImageData}
-                  onClick={PreviousButtonClick}
-                >
-                  <svg
-                    className="w-10 h-10 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="m15 19-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-
-                <div
-                  {...SwipeHandler}
-                  className="relative overflow-hidden w-full h-full"
-                >
-                  <img
-                    src={`data:image/jpeg;base64,${SelectedImageData.thumbnail}`}
-                    alt={"Blurry image"}
-                    className="absolute inset-0 w-full h-full aspect-auto object-contain filter blur-xs transition-opacity duration-300"
-                    style={{ opacity: loaded ? 0 : 1 }}
-                  />
-
-                  <img
-                    src={OriginalImageUrl}
-                    alt={"Original image"}
-                    onLoad={() => setLoaded(true)}
-                    className="absolute inset-0 w-full h-full aspect-auto object-contain transition-opacity duration-700"
-                    style={{ opacity: loaded ? 1 : 0 }}
-                  />
-                </div>
-                <button disabled={!NextImageData} onClick={NextButtonClick}>
-                  <svg
-                    className="w-10 h-10 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="m9 5 7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
+          <div className="h-full overflow-y-auto hide-scrollbar">
+            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-2  p-5">
+              {thumbnailsData.map((thumbnailData, idx) => (
+                <img
+                  onClick={() => {
+                    handleThumbnailClick(thumbnailData);
+                  }}
+                  key={idx}
+                  src={`data:image/jpeg;base64,${thumbnailData.thumbnail}`}
+                  alt="thumbnail"
+                  className="w-full h-full aspect-square object-cover rounded-md border-2 border-cyan-600 hover:border-4 shadow-xl hover:scale-140  transition-transform duration-200"
+                />
+              ))}
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* Right - Upload Section */}
-      <div className="flex flex-1 flex-col px-5 bg-gray-800  min-h-[300px] min-w-[300px]">
-        <h2 className="mt-4 mb-9 text-2xl font-bold text-white text-center tracking-wide">
-          Upload Files
-        </h2>
+        {/* Right - Upload Section */}
+        <div className="flex flex-1 flex-col px-5 bg-gray-800  min-h-[300px] min-w-[300px]">
+          <h2 className="mt-4 mb-9 text-2xl font-bold text-white text-center tracking-wide">
+            Upload Files
+          </h2>
 
-        <input
-          type="file"
-          multiple
-          onChange={handleFileChange}
-          disabled={isUploading}
-          ref={fileInputRef}
-          className="mb-2 p-3 bg-gray-900 text-gray-300  border-2 border-gray-500 rounded-lg  focus:outline-none focus:border-cyan-400 transition"
-        />
-        <button
-          onClick={handleParallelUpload}
-          disabled={selectedFiles.length === 0 || isUploading}
-          className={`mb-6 py-2 rounded-lg font-bold transition-colors  shadow-md text-lg ${
-            isUploading
-              ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-              : "bg-cyan-400 text-black hover:bg-cyan-500"
-          }`}
-        >
-          {isUploading ? "Uploading..." : "Upload"}
-        </button>
+          <input
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            disabled={isUploading}
+            ref={fileInputRef}
+            className="mb-2 p-3 bg-gray-900 text-gray-300  border-2 border-gray-500 rounded-lg  focus:outline-none focus:border-cyan-400 transition"
+          />
+          <button
+            onClick={handleParallelUpload}
+            disabled={selectedFiles.length === 0 || isUploading}
+            className={`mb-6 py-2 rounded-lg font-bold transition-colors  shadow-md text-lg ${
+              isUploading
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-cyan-400 text-black hover:bg-cyan-500"
+            }`}
+          >
+            {isUploading ? "Uploading..." : "Upload"}
+          </button>
 
-        <div className="overflow-y-auto hide-scrollbar ">
-          {Object.keys(uploadStatus).map((fileName) => (
-            <div
-              key={fileName}
-              className="border border-gray-600 mb-4 p-3 rounded-lg bg-gray-900 shadow-sm"
-            >
-              <div className="flex justify-between mb-1">
-                <strong className="truncate max-w-[60%] text-cyan-300">
-                  {fileName}
-                </strong>
-                <span className="ml-2 text-sm font-medium">
-                  {uploadStatus[fileName]}
-                </span>
-                {progress[fileName] !== undefined && (
-                  <span className="ml-2 text-xs text-gray-400">
-                    ({Math.round((progress[fileName] || 0) * 100)}%)
+          <div className="overflow-y-auto hide-scrollbar ">
+            {Object.keys(uploadStatus).map((fileName) => (
+              <div
+                key={fileName}
+                className="border border-gray-600 mb-4 p-3 rounded-lg bg-gray-900 shadow-sm"
+              >
+                <div className="flex justify-between mb-1">
+                  <strong className="truncate max-w-[60%] text-cyan-300">
+                    {fileName}
+                  </strong>
+                  <span className="ml-2 text-sm font-medium">
+                    {uploadStatus[fileName]}
                   </span>
+                  {progress[fileName] !== undefined && (
+                    <span className="ml-2 text-xs text-gray-400">
+                      ({Math.round((progress[fileName] || 0) * 100)}%)
+                    </span>
+                  )}
+                </div>
+                {progress[fileName] !== undefined && (
+                  <div className="progress-bar h-2 bg-gray-700 rounded mt-1">
+                    <div
+                      className="progress h-full bg-green-400 rounded transition-all"
+                      style={{ width: `${(progress[fileName] || 0) * 100}%` }}
+                    ></div>
+                  </div>
                 )}
               </div>
-              {progress[fileName] !== undefined && (
-                <div className="progress-bar h-2 bg-gray-700 rounded mt-1">
-                  <div
-                    className="progress h-full bg-green-400 rounded transition-all"
-                    style={{ width: `${(progress[fileName] || 0) * 100}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Full screen Image Preview */}
+
+      {SelectedImageData && (
+        <div className="absolute top-0 h-full w-full backdrop-blur-xl">
+          {/* download delete div */}
+          <div className="flex z-10 justify-between absolute w-full px-4 py-2 bg-black/30">
+            <button onClick={CloseFullImageView}>
+              <svg
+                className="w-10 h-10 text-gray-800 dark:text-white"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 12h14M5 12l4-4m-4 4 4 4"
+                />
+              </svg>
+            </button>
+            <div className="flex gap-5 p-2">
+              <a href={OriginalImageUrl} download={true}>
+                <svg
+                  className="w-7 h-7 text-gray-800 dark:text-white"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4"
+                  />
+                </svg>
+              </a>
+              <button>
+                <svg
+                  className="w-7 h-7 text-gray-800 dark:text-white"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* previous and next button div */}
+          <div
+            {...SwipeHandler}
+            className=" absolute z-5 flex justify-between w-full h-full"
+          >
+            <button
+              disabled={!PreviousImageData}
+              onClick={PreviousButtonClick}
+              className="flex w-[400px] px-14 opacity-0 hover:opacity-100"
+            >
+              <svg
+                className="self-center w-15 h-15 text-gray-800 dark:text-white bg-black/30 rounded-full"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="m15 19-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <button
+              disabled={!NextImageData}
+              onClick={NextButtonClick}
+              className="flex justify-end w-[400px] px-14 opacity-0 hover:opacity-100"
+            >
+              <svg
+                className="self-center w-15 h-15 text-gray-800 dark:text-white bg-black/30 rounded-full"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="m9 5 7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <img
+            src={`data:image/jpeg;base64,${SelectedImageData.thumbnail}`}
+            alt={"Blurry image"}
+            className="absolute inset-0 w-full h-full aspect-auto object-contain filter blur-xs transition-opacity duration-500"
+            style={{ opacity: loaded ? 0 : 1 }}
+          />
+
+          {OriginalImageUrl && (
+            <img
+              src={OriginalImageUrl}
+              alt="Original Image"
+              onLoad={() => setLoaded(true)}
+              className="absolute inset-0 w-full h-full aspect-auto object-contain transition-opacity duration-500"
+              style={{ opacity: loaded ? 1 : 0 }}
+            />
+          )}
+        </div>
+      )}
+    </>
   );
 }
 

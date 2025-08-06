@@ -291,5 +291,15 @@ async def getFullSizePhoto(websocket: WebSocket, client_id: str, message_id: int
 
     return await websocket.close()
 
+
+@app.post("/deleteMessage")
+async def deleteMessage(payload: dict = Body(...)):
+    client_id = payload.get("client_id")
+    Message_id = payload.get("Message_id")
+
+    client = Client_Sessions.get(client_id)
+    await client.delete_messages("me", message_ids=Message_id)
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=10000, reload=True)

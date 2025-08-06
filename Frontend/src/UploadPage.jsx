@@ -337,6 +337,24 @@ function UploadPage() {
     setLoaded(false);
   };
 
+  const handleDelete = async () => {
+    const current_message_id = SelectedImageData.message_id;
+    setThumbnailsData(
+      thumbnailsData.filter((thumbnailData) => {
+        return thumbnailData.message_id !== current_message_id;
+      })
+    );
+    CloseFullImageView();
+    fetch(`${HTTP_BASE}/deleteMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: client_id,
+        Message_id: current_message_id,
+      }),
+    });
+  };
+
   return (
     <>
       {/* Grid and Uplaod section */}
@@ -482,7 +500,7 @@ function UploadPage() {
                   />
                 </svg>
               </a>
-              <button>
+              <button onClick={handleDelete}>
                 <svg
                   className="w-7 h-7 text-gray-800 dark:text-white"
                   aria-hidden="true"

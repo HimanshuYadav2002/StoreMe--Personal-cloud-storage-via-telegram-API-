@@ -3,7 +3,6 @@ import io
 from telethon import errors
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.errors import SessionRevokedError, AuthKeyUnregisteredError, RPCError
-import uvicorn
 import base64
 import asyncio
 import uuid
@@ -299,7 +298,3 @@ async def deleteMessage(payload: dict = Body(...)):
 
     client = Client_Sessions.get(client_id)
     await client.delete_messages("me", message_ids=Message_id)
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=10000, reload=True)
